@@ -1,0 +1,9 @@
+[workspace.package]
+version = "0.4.1"
+edition = "2021"
+authors = [ "Frand <frand.nano@gmail.com>" ]
+repository = "https://github.com/frand-nano/frand-home"
+
+[workspace]
+resolver = "2"
+members = [ "node", "macro" ]

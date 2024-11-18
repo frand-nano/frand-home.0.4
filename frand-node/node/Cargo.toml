@@ -1,0 +1,11 @@
+[package]
+name = "frand-node"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+frand-node-macro = { path = "../macro" }
+log = "0.4"
+anyhow = "1.0"
+serde = "1"
