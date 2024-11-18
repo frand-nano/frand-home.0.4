@@ -1,6 +1,5 @@
 pub use prelude::*;
 
 pub mod prelude;
-
-mod bases;
-mod extends;
+pub mod bases;
+pub mod extends;

@@ -8,3 +8,5 @@ edition.workspace = true
 frand-node-macro = { path = "../macro" }
 log = "0.4"
 anyhow = "1.0"
+serde = "1"
+ciborium = "0.2"
