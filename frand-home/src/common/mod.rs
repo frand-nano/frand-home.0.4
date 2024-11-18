@@ -1,4 +1,12 @@
+use frand_node::node;
 use yew::prelude::*;
+
+#[node]
+pub struct Test {
+    
+}
+
+test_macro!{}
 
 #[allow(unused)]
 pub fn render() {
