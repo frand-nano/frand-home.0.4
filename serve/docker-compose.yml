@@ -1,0 +1,53 @@
+name: frand-home
+services:
+  frand-home-mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${FRAND_HOME_MYSQL_PASSWORD}
+      MYSQL_ROOT_HOST: "%"
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: always
+  frand-builder:
+    image: frand-builder
+    build: 
+      context: ../frand-builder
+      dockerfile: ../frand-builder/Dockerfile
+  frand-node:
+    image: frand-node
+    build: 
+      context: ../frand-node
+      dockerfile: ../frand-node/Dockerfile
+  frand-home:
+    image: frand-home
+    depends_on: 
+      - frand-builder
+      - frand-node
+    build: 
+      context: ../frand-home
+      dockerfile: ../frand-home/Dockerfile
+  frand-home-serve:
+    image: frand-home-serve
+    depends_on: 
+      frand-home:
+        condition: service_started
+      frand-home-mysql:
+        condition: service_healthy
+    build: 
+      context: ./
+      dockerfile: ./Dockerfile
+    ports:
+      - ${FRAND_HOME_SERVER_PORT}:${FRAND_HOME_SERVER_PORT}
+    volumes:
+      - "../include:/usr/local/bin/include:ro"
+      - server-data:/usr/local/bin/data
+    restart: always
+volumes:
+  mysql-data: 
+  server-data: 

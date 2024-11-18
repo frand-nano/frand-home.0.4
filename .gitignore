@@ -1,2 +1,6 @@
+/include/key
 /frand-node/Cargo.lock
 /frand-node/target
+/frand-home/Cargo.lock
+/frand-home/target
+/frand-home/data

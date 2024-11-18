@@ -1,0 +1,24 @@
+[package]
+name = "frand-home"
+version = "0.4.1"
+edition = "2021"
+authors = [ "Frand <frand.nano@gmail.com>" ]
+repository = "https://github.com/frand-nano/frand-home"
+
+[dependencies]
+frand-node = { path = "../frand-node/node" }
+log = "0.4"
+anyhow = "1.0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+yew = { version = "0.21", features = ["csr"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+dotenv = "0.15"
+tokio = { version = "1.4", features = ["rt", "rt-multi-thread", "macros"] }
+yew = { version = "0.21", features = ["csr", "ssr"] }
+warp = { version = "0.3", features = ["tls"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies.log4rs]
+version = "1.3"
+features = ["rolling_file_appender", "compound_policy", "size_trigger", "fixed_window_roller"]

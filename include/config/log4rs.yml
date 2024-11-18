@@ -1,0 +1,54 @@
+refresh_rate: 300 seconds
+
+appenders:
+  stdout:
+    kind: console
+    filters:
+      - kind: threshold
+        level: info
+    encoder:
+      pattern: "📋 {d} {l} {t}{n}{m}{n}{n}"
+
+  debug:
+    kind: file
+    filters:
+      - kind: threshold
+        level: debug
+    path: "./data/log/debug.log"
+    encoder:
+      pattern: "📋{d} {l} {t}{n}{m}{n}{n}"
+
+  info:
+    kind: file
+    filters:
+      - kind: threshold
+        level: info
+    path: "./data/log/info.log"
+    encoder:
+      pattern: "📋{d} {l} {t}{n}{m}{n}{n}"
+
+  warn:
+    kind: file
+    filters:
+      - kind: threshold
+        level: warn
+    path: "./data/log/warn.log"
+    encoder:
+      pattern: "🔔{d} {l} {t}{n}{m}{n}{n}"
+
+  error:
+    kind: file
+    filters:
+      - kind: threshold
+        level: error
+    path: "./data/log/error.log"
+    encoder:
+      pattern: "❗{d} {l} {t}{n}{m}{n}{n}"
+
+root:
+  appenders:
+    - stdout
+    - debug
+    - info
+    - warn
+    - error
