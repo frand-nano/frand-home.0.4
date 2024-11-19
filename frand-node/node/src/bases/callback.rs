@@ -1,10 +1,10 @@
 use std::{fmt::Debug, marker::PhantomData, rc::Rc};
-use super::{context::CreationContext, message::MessageData, state::StateBase};
+use super::{context::CreationContext, message::{MessageData, MessageDataId, MessageDataKey}, state::StateBase};
 use crate::result::Result;
 
 #[derive(Clone)]
 pub struct Callback<S: StateBase> {
-    ids: Vec<usize>,
+    ids: MessageDataKey,
     callback: Rc<dyn Fn(Result<MessageData>)>,    
     _phantom: PhantomData<S>,  
 }
@@ -26,13 +26,13 @@ impl<S: StateBase> PartialEq for Callback<S> {
 impl<S: StateBase> Callback<S> {
     pub fn new(
         context: &CreationContext,     
-        mut ids: Vec<usize>,
-        id: Option<usize>, 
+        mut ids: Vec<MessageDataId>,
+        id: Option<MessageDataId>, 
     ) -> Self {
         if let Some(id) = id { ids.push(id); }
 
         Self { 
-            ids,
+            ids: ids.into_boxed_slice(),
             callback: context.callback().to_owned(),
             _phantom: Default::default(),
         }

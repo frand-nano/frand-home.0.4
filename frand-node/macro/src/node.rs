@@ -3,6 +3,8 @@ use proc_macro2::TokenStream;
 use syn::{Field, Fields, Ident, ItemStruct, Result};
 use quote::quote;
 
+pub type MessageDataId = u32;
+
 pub fn expand(
     mod_name: &Ident,
     state: &ItemStruct,
@@ -12,9 +14,9 @@ pub fn expand(
         _ => Vec::default(),
     };  
 
-    let state_id = fields.len();
+    let state_id = fields.len() as MessageDataId;
 
-    let indexes: Vec<_> = (0..fields.len()).into_iter().collect();
+    let indexes: Vec<_> = (0..fields.len() as MessageDataId).into_iter().collect();
     let names: Vec<_> = fields.iter().filter_map(|field| field.ident.as_ref()).collect();
     let tys: Vec<_> = fields.iter().map(|field| &field.ty).collect();
     let ty_nodes: Vec<_> = tys.iter().map(|ty| 
@@ -52,8 +54,8 @@ pub fn expand(
 
             fn new(
                 context: &CreationContext,   
-                mut ids: Vec<usize>,
-                id: Option<usize>,  
+                mut ids: Vec<MessageDataId>,
+                id: Option<MessageDataId>,  
             ) -> Self {
                 if let Some(id) = id { ids.push(id); }
 

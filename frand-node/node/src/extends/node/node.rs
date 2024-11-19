@@ -1,8 +1,5 @@
 use crate::bases::{
-    callback::Callback, 
-    context::CreationContext, 
-    node::NodeBase, 
-    state::StateBase,
+    callback::Callback, context::CreationContext, message::MessageDataId, node::NodeBase, state::StateBase
 };
 
 use super::message::NodeMessage;
@@ -18,8 +15,8 @@ impl<S: StateBase> NodeBase<S> for Node<S> {
 
     fn new(
         context: &CreationContext,   
-        mut ids: Vec<usize>,
-        id: Option<usize>,  
+        mut ids: Vec<MessageDataId>,
+        id: Option<MessageDataId>,  
     ) -> Self {
         if let Some(id) = id { ids.push(id); }
 

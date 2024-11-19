@@ -3,7 +3,7 @@ pub use crate::{
     bases::{
         callback::Callback, 
         context::CreationContext, 
-        message::{MessageBase, MessageData, MessageError}, 
+        message::{MessageBase, MessageData, MessageError, MessageDataId}, 
         node::NodeBase,
         state::StateBase,
     },

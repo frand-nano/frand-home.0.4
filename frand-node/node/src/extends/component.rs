@@ -1,6 +1,6 @@
-use std::{collections::HashSet, rc::Rc, sync::mpsc::{channel, Receiver, Sender}};
+use std::{collections::HashMap, rc::Rc, sync::mpsc::{channel, Receiver, Sender}};
 use crate::{
-    bases::{component::ComponentBase, context::CreationContext, message::MessageData, node::NodeBase, state::StateBase}, 
+    bases::{component::ComponentBase, context::CreationContext, message::{MessageData, MessageDataKey}, node::NodeBase, state::StateBase}, 
     result::{ComponentError, Result},
 };
 
@@ -10,6 +10,8 @@ pub struct Component<S: StateBase> {
     input_tx: Sender<MessageData>,
     input_rx: Receiver<MessageData>,
     output_tx: Option<Sender<Result<MessageData>>>,
+    current_messages: HashMap<MessageDataKey, MessageData>,
+    next_messages: HashMap<MessageDataKey, MessageData>,
 }
 
 impl<S: StateBase> ComponentBase<S> for Component<S> {
@@ -45,6 +47,8 @@ impl<S: StateBase> ComponentBase<S> for Component<S> {
             input_tx, 
             input_rx, 
             output_tx: None, 
+            current_messages: HashMap::new(),
+            next_messages: HashMap::new(),
         }
     }
 

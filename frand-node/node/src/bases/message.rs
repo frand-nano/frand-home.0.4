@@ -3,19 +3,23 @@ use std::fmt::Debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use crate::result::{ComponentError, Result};
 
+pub type MessageDataId = u32;
+pub type MessageDataKey = Box<[MessageDataId]>;
+pub type MessageDataDepth = u32;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageError {
-    pub depth: usize,
-    pub ids: Vec<usize>,
-    pub value: Vec<u8>,
+    pub depth: MessageDataDepth,
+    pub ids: MessageDataKey,
+    pub value: Box<[u8]>,
     pub message: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageData {
-    depth: usize,
-    ids: Vec<usize>,
-    value: Vec<u8>,
+    depth: MessageDataDepth,
+    ids: MessageDataKey,
+    value: Box<[u8]>,
 }
 
 pub trait MessageBase: Debug + Clone + Sized {
@@ -24,22 +28,26 @@ pub trait MessageBase: Debug + Clone + Sized {
 
 impl MessageData {
     pub fn serialize<V: Serialize>(
-        ids: &Vec<usize>, 
-        id: Option<usize>, 
+        ids: &MessageDataKey, 
+        id: Option<MessageDataId>, 
         value: &V,
     ) -> Result<Self> {
-        let mut ids = ids.to_owned();
+        let mut ids = ids.to_vec();
 
         if let Some(id) = id { ids.push(id); }
 
+        let mut buffer = Vec::new();
         let mut result = Self { 
             depth: 0,
-            ids: ids.to_owned(), 
-            value: Vec::new(), 
+            ids: ids.into_boxed_slice(), 
+            value: Default::default(), 
         };
 
-        match ciborium::into_writer(value, &mut result.value) {
-            Ok(()) => Ok(result),
+        match ciborium::into_writer(value, &mut buffer) {
+            Ok(()) => {
+                result.value = buffer.into_boxed_slice();
+                Ok(result)
+            },
             Err(err) => Err(result.error(err.to_string())),
         }
     }
@@ -49,8 +57,8 @@ impl MessageData {
         .map_err(|err| self.error(err.to_string()))
     }
 
-    pub fn pop_id(&mut self) -> Option<usize> { 
-        match self.ids.get(self.depth) {
+    pub fn pop_id(&mut self) -> Option<MessageDataId> { 
+        match self.ids.get(self.depth as usize) {
             Some(id) => {
                 self.depth += 1;
                 Some(*id)
