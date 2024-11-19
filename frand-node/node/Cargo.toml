@@ -7,6 +7,6 @@ edition.workspace = true
 [dependencies]
 frand-node-macro = { path = "../macro" }
 log = "0.4"
-anyhow = "1.0"
 serde = "1"
 ciborium = "0.2"
+anyhow = "1.0"

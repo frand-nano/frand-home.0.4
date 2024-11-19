@@ -1,10 +1,11 @@
 use std::{fmt::Debug, marker::PhantomData, rc::Rc};
-use super::{context::Context, message::{MessageData, MessageError}, state::StateBase};
+use super::{context::CreationContext, message::MessageData, state::StateBase};
+use crate::result::Result;
 
 #[derive(Clone)]
 pub struct Callback<S: StateBase> {
     ids: Vec<usize>,
-    callback: Rc<dyn Fn(Result<MessageData, MessageError>)>,    
+    callback: Rc<dyn Fn(Result<MessageData>)>,    
     _phantom: PhantomData<S>,  
 }
 
@@ -24,7 +25,7 @@ impl<S: StateBase> PartialEq for Callback<S> {
 
 impl<S: StateBase> Callback<S> {
     pub fn new(
-        context: &Context,     
+        context: &CreationContext,     
         mut ids: Vec<usize>,
         id: Option<usize>, 
     ) -> Self {

@@ -1,6 +1,7 @@
 use std::io::Cursor;
 use std::fmt::Debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use crate::result::{ComponentError, Result};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageError {
@@ -18,7 +19,7 @@ pub struct MessageData {
 }
 
 pub trait MessageBase: Debug + Clone + Sized {
-    fn deserialize(data: MessageData) -> Result<Self, MessageError>;
+    fn deserialize(data: MessageData) -> Result<Self>;
 }
 
 impl MessageData {
@@ -26,7 +27,7 @@ impl MessageData {
         ids: &Vec<usize>, 
         id: Option<usize>, 
         value: &V,
-    ) -> Result<Self, MessageError> {
+    ) -> Result<Self> {
         let mut ids = ids.to_owned();
 
         if let Some(id) = id { ids.push(id); }
@@ -43,7 +44,7 @@ impl MessageData {
         }
     }
 
-    pub fn deserialize<V: DeserializeOwned>(self) -> Result<V, MessageError> {
+    pub fn deserialize<V: DeserializeOwned>(self) -> Result<V> {
         ciborium::from_reader(Cursor::new(&self.value))
         .map_err(|err| self.error(err.to_string()))
     }
@@ -61,12 +62,14 @@ impl MessageData {
     pub fn error(
         self, 
         message: impl AsRef<str>,
-    ) -> MessageError {
-        MessageError { 
-            depth: self.depth, 
-            ids: self.ids, 
-            value: self.value, 
-            message: message.as_ref().to_owned(), 
-        }
+    ) -> ComponentError {
+        ComponentError::Message(
+            MessageError { 
+                depth: self.depth, 
+                ids: self.ids, 
+                value: self.value, 
+                message: message.as_ref().to_owned(), 
+            }
+        )
     }
 }

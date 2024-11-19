@@ -1,4 +1,4 @@
-use frand_node::node;
+use frand_node::*;
 use yew::{function_component, Html};
 
 #[node]

@@ -29,7 +29,7 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     use super::*;
 
                     #[allow(unused_imports)]
-                    use frand_node::*;
+                    use frand_node::macro_prelude::*;
 
                     use reexport_serde::{Deserialize, Serialize};
                     

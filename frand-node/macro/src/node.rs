@@ -51,7 +51,7 @@ pub fn expand(
             type Message = Message;
 
             fn new(
-                context: &Context,   
+                context: &CreationContext,   
                 mut ids: Vec<usize>,
                 id: Option<usize>,  
             ) -> Self {
@@ -77,7 +77,7 @@ pub fn expand(
         }
 
         impl MessageBase for Message {
-            fn deserialize(mut data: MessageData) -> Result<Self, MessageError> {
+            fn deserialize(mut data: MessageData) -> Result<Self, ComponentError> {
                 match data.pop_id() {
                     #(Some(#indexes) => Ok(Message::#pascal_names(#ty_messages::deserialize(data)?)),)*
                     Some(#state_id) => Ok(Self::State(data.deserialize()?)),

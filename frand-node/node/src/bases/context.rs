@@ -1,18 +1,19 @@
 use std::rc::Rc;
-use super::message::{MessageData, MessageError};
+use super::message::MessageData;
+use crate::result::Result;
 
-pub struct Context {
-    callback: Rc<dyn Fn(Result<MessageData, MessageError>)>, 
+pub struct CreationContext {
+    callback: Rc<dyn Fn(Result<MessageData>)>, 
 }
 
-impl Context {
+impl CreationContext {
     pub fn new(
-        callback: Rc<dyn Fn(Result<MessageData, MessageError>)>, 
+        callback: Rc<dyn Fn(Result<MessageData>)>, 
     ) -> Self {
         Self { callback }
     }
 
-    pub fn callback(&self) -> &Rc<dyn Fn(Result<MessageData, MessageError>)> { 
+    pub fn callback(&self) -> &Rc<dyn Fn(Result<MessageData>)> { 
         &self.callback 
     }
 }

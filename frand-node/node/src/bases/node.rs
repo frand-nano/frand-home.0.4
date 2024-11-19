@@ -1,10 +1,10 @@
-use super::{context::Context, message::MessageBase, state::StateBase};
+use super::{context::CreationContext, message::MessageBase, state::StateBase};
 
-pub trait NodeBase<S: StateBase> {    
+pub trait NodeBase<S: StateBase>: Clone {    
     type Message: MessageBase;
 
     fn new(
-        context: &Context,     
+        context: &CreationContext,     
         ids: Vec<usize>,
         id: Option<usize>,
     ) -> Self;

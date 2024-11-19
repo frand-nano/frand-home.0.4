@@ -1,6 +1,9 @@
-use crate::bases::{
-    message::{self, MessageData, MessageError}, 
-    state::StateBase,
+use crate::{
+    result::Result,
+    bases::{
+        message::{MessageBase, MessageData}, 
+        state::StateBase,
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -8,8 +11,8 @@ pub enum NodeMessage<S: StateBase> {
     State(S),
 }
 
-impl<S: StateBase> message::MessageBase for NodeMessage<S> {
-    fn deserialize(mut data: MessageData) -> Result<Self, MessageError> {
+impl<S: StateBase> MessageBase for NodeMessage<S> {
+    fn deserialize(mut data: MessageData) -> Result<Self> {
         match data.pop_id() {
             Some(0) => Ok(Self::State(data.deserialize()?)),
             Some(_) => Err(data.error(

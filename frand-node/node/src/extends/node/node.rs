@@ -1,6 +1,6 @@
 use crate::bases::{
     callback::Callback, 
-    context::Context, 
+    context::CreationContext, 
     node::NodeBase, 
     state::StateBase,
 };
@@ -17,7 +17,7 @@ impl<S: StateBase> NodeBase<S> for Node<S> {
     type Message = NodeMessage<S>;
 
     fn new(
-        context: &Context,   
+        context: &CreationContext,   
         mut ids: Vec<usize>,
         id: Option<usize>,  
     ) -> Self {
