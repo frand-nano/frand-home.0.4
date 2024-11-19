@@ -7,10 +7,6 @@ pub trait ComponentBase<S: StateBase> {
     fn input_tx(&self) -> &Sender<MessageData>;
     fn output_rx(&mut self) -> Result<Receiver<Result<MessageData>>>;
     
-    fn new() -> Self;
-    fn perform(&mut self);
-}
-
-pub trait Component<S: StateBase>: ComponentBase<S> {
-    
+    fn new(control: Box<dyn Fn(&S::Node, S::Message) -> Result<()>>) -> Self;
+    fn perform(&mut self) -> Result<()>;    
 }

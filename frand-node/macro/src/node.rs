@@ -23,7 +23,7 @@ pub fn expand(
         quote!{ <#ty as StateBase>::Node }
     ).collect();
     let ty_messages: Vec<_> = tys.iter().map(|ty| 
-        quote!{ <<#ty as StateBase>::Node as NodeBase<#ty>>::Message }
+        quote!{ <#ty as StateBase>::Message }
     ).collect();
 
     let pascal_names: Vec<_> = names.iter()
@@ -38,6 +38,7 @@ pub fn expand(
 
         impl StateBase for State {
             type Node = Node;
+            type Message = Message;
         }
     };
 
@@ -65,8 +66,27 @@ pub fn expand(
                 }
             }
 
-            fn emit(&self, state: &State) {
-                self.callback.emit(state);
+            fn emit(&self, state: &State) -> Result<()> {
+                self.callback.emit(state)
+            }
+
+            #[doc(hidden)]
+            fn __apply(&mut self, data: MessageData) -> Result<()> {
+                match data.next() {
+                    #((Some(#indexes), data) => self.#names.__apply(data),)*
+                    (Some(#state_id), data) => Ok(self.__apply_state(data.deserialize()?)),
+                    (Some(_), data) => Err(data.error(
+                        format!("{}::apply() unknown id", stringify!(#mod_name)),
+                    )),
+                    (None, data) => Err(data.error(
+                        format!("{}::apply() data has no more id", stringify!(#mod_name)),
+                    )),
+                }     
+            }
+
+            #[doc(hidden)]
+            fn __apply_state(&mut self, state: State) {
+                #(self.#names.__apply_state(state.#names);)*
             }
         }
     };
@@ -79,15 +99,15 @@ pub fn expand(
         }
 
         impl MessageBase for Message {
-            fn deserialize(mut data: MessageData) -> Result<Self, ComponentError> {
-                match data.pop_id() {
-                    #(Some(#indexes) => Ok(Message::#pascal_names(#ty_messages::deserialize(data)?)),)*
-                    Some(#state_id) => Ok(Self::State(data.deserialize()?)),
-                    Some(_) => Err(data.error(
-                        format!("{}::Message::deserialize() unknown id", stringify!(#mod_name)),
+            fn deserialize_message(data: MessageData) -> Result<Self, ComponentError> {
+                match data.next() {
+                    #((Some(#indexes), data) => Ok(Message::#pascal_names(#ty_messages::deserialize_message(data)?)),)*
+                    (Some(#state_id), data) => Ok(Self::State(data.deserialize()?)),
+                    (Some(_), data) => Err(data.error(
+                        format!("{}::Message::deserialize_message() unknown id", stringify!(#mod_name)),
                     )),
-                    None => Err(data.error(
-                        format!("{}::Message::deserialize() data has no more id", stringify!(#mod_name)),
+                    (None, data) => Err(data.error(
+                        format!("{}::Message::deserialize_message() data has no more id", stringify!(#mod_name)),
                     )),
                 }     
             }

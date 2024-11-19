@@ -1,14 +1,17 @@
 use std::fmt::Debug;
 use serde::{de::DeserializeOwned, Serialize};
 
-use super::node::NodeBase;
+use super::{message::MessageBase, node::NodeBase};
 
 mod frand_node {
-    pub use crate::*;
+    pub mod macro_prelude {
+        pub use crate::macro_prelude::*;
+    }
 }
 
 pub trait StateBase: Default + Debug + Clone + PartialEq + Serialize + DeserializeOwned {
     type Node: NodeBase<Self>;
+    type Message: MessageBase;
 }
 
 #[macro_export]
@@ -18,8 +21,24 @@ macro_rules! impl_state_for {
     };
     ( @inner($($tys: ty,)*) ) => {    
         $(
-            impl frand_node::StateBase for $tys {
-                type Node = frand_node::Node<Self>;
+            impl frand_node::macro_prelude::StateBase for $tys {
+                type Node = frand_node::macro_prelude::Node<Self>;
+                type Message = $tys;
+            }
+            impl frand_node::macro_prelude::MessageBase for $tys {
+                fn deserialize_message(
+                    data: frand_node::macro_prelude::MessageData,
+                ) -> frand_node::macro_prelude::Result<Self> {
+                    match data.next() {
+                        (Some(0), data) => Ok(data.deserialize()?),
+                        (Some(_), data) => Err(data.error(
+                            format!("S::deserialize() unknown id"),
+                        )),
+                        (None, data) => Err(data.error(
+                            format!("S::deserialize() data has no more id"),
+                        )),
+                    }     
+                }
             }
         )*      
     };

@@ -1,5 +1,5 @@
 pub use crate::{
-    result::ComponentError,
+    result::{ComponentError, Result},
     bases::{
         callback::Callback, 
         context::CreationContext, 

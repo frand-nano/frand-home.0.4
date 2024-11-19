@@ -5,7 +5,7 @@ use crate::result::Result;
 #[derive(Clone)]
 pub struct Callback<S: StateBase> {
     ids: MessageDataKey,
-    callback: Rc<dyn Fn(Result<MessageData>)>,    
+    callback: Rc<dyn Fn(MessageData)>,    
     _phantom: PhantomData<S>,  
 }
 
@@ -38,7 +38,7 @@ impl<S: StateBase> Callback<S> {
         }
     }
 
-    pub fn emit(&self, state: &S) {
-        (self.callback)(MessageData::serialize(&self.ids, None, state))
+    pub fn emit(&self, state: &S) -> Result<()> {
+        Ok((self.callback)(MessageData::serialize(&self.ids, None, state)?))
     }
 }

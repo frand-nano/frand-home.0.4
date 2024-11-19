@@ -23,10 +23,12 @@ pub struct MessageData {
 }
 
 pub trait MessageBase: Debug + Clone + Sized {
-    fn deserialize(data: MessageData) -> Result<Self>;
+    fn deserialize_message(data: MessageData) -> Result<Self>;
 }
 
 impl MessageData {
+    pub fn ids(&self) -> &MessageDataKey { &self.ids }
+
     pub fn serialize<V: Serialize>(
         ids: &MessageDataKey, 
         id: Option<MessageDataId>, 
@@ -57,13 +59,13 @@ impl MessageData {
         .map_err(|err| self.error(err.to_string()))
     }
 
-    pub fn pop_id(&mut self) -> Option<MessageDataId> { 
+    pub fn next(mut self) -> (Option<MessageDataId>, Self) { 
         match self.ids.get(self.depth as usize) {
             Some(id) => {
                 self.depth += 1;
-                Some(*id)
+                (Some(*id), self)
             },
-            None => None,
+            None => (None, self),
         }
     }
 
