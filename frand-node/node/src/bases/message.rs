@@ -18,24 +18,19 @@ pub struct MessageData {
 }
 
 pub trait MessageBase: Debug + Clone + Sized {
-    fn id_count() -> usize;
-    fn new_inner(id: usize, data: MessageData) -> Result<Self, MessageError>;
-
-    fn new(mut data: MessageData) -> Result<Self, MessageError> {
-        match data.pop_id() {
-            Some(id) if id < Self::id_count() => Self::new_inner(id, data),
-            Some(_) => Err(data.error(
-                "MessageBase::new() id is not in range",
-            )),
-            None => Err(data.error(
-                "MessageBase::new() data has no more id",
-            )),
-        }     
-    }
+    fn deserialize(data: MessageData) -> Result<Self, MessageError>;
 }
 
 impl MessageData {
-    pub fn new<V: Serialize>(ids: &Vec<usize>, value: &V) -> Result<Self, MessageError> {
+    pub fn serialize<V: Serialize>(
+        ids: &Vec<usize>, 
+        id: Option<usize>, 
+        value: &V,
+    ) -> Result<Self, MessageError> {
+        let mut ids = ids.to_owned();
+
+        if let Some(id) = id { ids.push(id); }
+
         let mut result = Self { 
             depth: 0,
             ids: ids.to_owned(), 
@@ -48,7 +43,7 @@ impl MessageData {
         }
     }
 
-    pub fn read<V: DeserializeOwned>(self) -> Result<V, MessageError> {
+    pub fn deserialize<V: DeserializeOwned>(self) -> Result<V, MessageError> {
         ciborium::from_reader(Cursor::new(&self.value))
         .map_err(|err| self.error(err.to_string()))
     }

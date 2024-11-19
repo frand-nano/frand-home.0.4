@@ -12,7 +12,6 @@ pub fn expand(
         _ => Vec::default(),
     };  
 
-    let id_count = fields.len() + 1;
     let state_id = fields.len();
 
     let indexes: Vec<_> = (0..fields.len()).into_iter().collect();
@@ -78,14 +77,17 @@ pub fn expand(
         }
 
         impl MessageBase for Message {
-            fn id_count() -> usize { #id_count }
-
-            fn new_inner(id: usize, data: MessageData) -> Result<Self, MessageError> {
-                Ok(match id {
-                    #(#indexes => Message::#pascal_names(#ty_messages::new(data)?),)*
-                    #state_id => Self::State(data.read()?),
-                    _ => Err(data.error(format!("{} unknown id", stringify!(#mod_name))))?,
-                })
+            fn deserialize(mut data: MessageData) -> Result<Self, MessageError> {
+                match data.pop_id() {
+                    #(Some(#indexes) => Ok(Message::#pascal_names(#ty_messages::deserialize(data)?)),)*
+                    Some(#state_id) => Ok(Self::State(data.deserialize()?)),
+                    Some(_) => Err(data.error(
+                        format!("{}::Message::deserialize() unknown id", stringify!(#mod_name)),
+                    )),
+                    None => Err(data.error(
+                        format!("{}::Message::deserialize() data has no more id", stringify!(#mod_name)),
+                    )),
+                }     
             }
         }
     };

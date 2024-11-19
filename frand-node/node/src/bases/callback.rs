@@ -38,6 +38,6 @@ impl<S: StateBase> Callback<S> {
     }
 
     pub fn emit(&self, state: &S) {
-        (self.callback)(MessageData::new(&self.ids, state))
+        (self.callback)(MessageData::serialize(&self.ids, None, state))
     }
 }

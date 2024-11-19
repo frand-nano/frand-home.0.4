@@ -9,12 +9,15 @@ pub enum NodeMessage<S: StateBase> {
 }
 
 impl<S: StateBase> message::MessageBase for NodeMessage<S> {
-    fn id_count() -> usize { 1 }
-
-    fn new_inner(id: usize, data: MessageData) -> Result<Self, MessageError> {
-        Ok(match id {
-            0 => Self::State(data.read()?),
-            _ => Err(data.error("NodeMessage<S> unknown id"))?,
-        })
+    fn deserialize(mut data: MessageData) -> Result<Self, MessageError> {
+        match data.pop_id() {
+            Some(0) => Ok(Self::State(data.deserialize()?)),
+            Some(_) => Err(data.error(
+                format!("NodeMessage<S>::deserialize() unknown id"),
+            )),
+            None => Err(data.error(
+                format!("NodeMessage<S>::deserialize() data has no more id"),
+            )),
+        }     
     }
 }
