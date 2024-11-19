@@ -26,11 +26,13 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 #[allow(non_snake_case)]
                 pub mod #mod_name {
                     #[allow(unused_imports)]
-                    use frand_node::*;
-
-                    #[allow(unused_imports)]
                     use super::*;
 
+                    #[allow(unused_imports)]
+                    use frand_node::*;
+
+                    use reexport_serde::{Deserialize, Serialize};
+                    
                     #node
                 }
             }

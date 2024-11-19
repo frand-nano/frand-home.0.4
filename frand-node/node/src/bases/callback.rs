@@ -1,14 +1,28 @@
-use std::{marker::PhantomData, rc::Rc};
-use anyhow::Result;
-use super::{context::Context, message::ComponentMessageData, state::State};
+use std::{fmt::Debug, marker::PhantomData, rc::Rc};
+use super::{context::Context, message::{MessageData, MessageError}, state::StateBase};
 
-pub struct Callback<S: State> {
+#[derive(Clone)]
+pub struct Callback<S: StateBase> {
     ids: Vec<usize>,
-    callback: Rc<dyn Fn(Result<ComponentMessageData>)>,    
+    callback: Rc<dyn Fn(Result<MessageData, MessageError>)>,    
     _phantom: PhantomData<S>,  
 }
 
-impl<S: State> Callback<S> {
+impl<S: StateBase> Debug for Callback<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Callback")
+        .field("ids", &self.ids)
+        .finish()
+    }
+}
+
+impl<S: StateBase> PartialEq for Callback<S> {
+    fn eq(&self, other: &Self) -> bool {
+        self.ids == other.ids
+    }
+}
+
+impl<S: StateBase> Callback<S> {
     pub fn new(
         context: &Context,     
         mut ids: Vec<usize>,
@@ -24,6 +38,6 @@ impl<S: State> Callback<S> {
     }
 
     pub fn emit(&self, state: &S) {
-        (self.callback)(ComponentMessageData::new(&self.ids, state))
+        (self.callback)(MessageData::new(&self.ids, state))
     }
 }

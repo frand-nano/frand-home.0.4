@@ -9,6 +9,7 @@ repository = "https://github.com/frand-nano/frand-home"
 frand-node = { path = "../frand-node/node" }
 log = "0.4"
 anyhow = "1.0"
+serde = "1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 yew = { version = "0.21", features = ["csr"] }

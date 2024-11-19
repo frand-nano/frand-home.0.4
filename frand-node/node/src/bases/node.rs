@@ -1,6 +1,8 @@
-use super::{context::Context, state::State};
+use super::{context::Context, message::MessageBase, state::StateBase};
 
-pub trait NodeBase<S: State> {    
+pub trait NodeBase<S: StateBase> {    
+    type Message: MessageBase;
+
     fn new(
         context: &Context,     
         ids: Vec<usize>,

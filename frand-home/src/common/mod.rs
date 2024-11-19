@@ -1,9 +1,9 @@
 use frand_node::node;
-use yew::prelude::*;
+use yew::{function_component, Html};
 
 #[node]
 pub struct Test {
-    
+    pub number: i32,
 }
 
 test_macro!{}
