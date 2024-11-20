@@ -12,9 +12,9 @@ pub trait ComponentBase {
     
     fn input_tx(&self) -> &Sender<MessageData> { self.performer().input_tx() }    
     fn output_rx(&mut self) -> &mut Option<Receiver<Result<MessageData>>>;
-    fn perform(&mut self) -> Result<()>;    
     
     fn new() -> Self;
+    fn perform(&mut self) -> Result<()>;    
 }
 
 pub trait Component: ComponentBase {

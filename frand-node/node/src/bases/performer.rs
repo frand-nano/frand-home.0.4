@@ -3,10 +3,11 @@ use crate::{
     bases::{
         message::{MessageBase, MessageData, MessageDataKey}, 
         node::NodeBase, 
-        state::StateBase,
     }, 
     result::Result,
 };
+
+use super::Component;
 
 pub struct Performer {    
     pub callback: Rc<dyn Fn(MessageData)>, 
@@ -64,10 +65,9 @@ impl Performer {
         )
     }
 
-    pub fn perform<S: StateBase>(
+    pub fn perform<C: Component>(
         &mut self, 
-        node: &mut S::Node,
-        control: Box<dyn Fn(&S::Node, S::Message) -> Result<()>>,
+        node: &mut C::Node,
     ) -> Result<()> {
         let mut messages = Vec::new();
         messages.extend(self.input_rx.try_iter());
@@ -97,8 +97,8 @@ impl Performer {
         
                             node.__apply(message.clone())?;
                             
-                            let message = S::Message::deserialize(message)?;
-                            (control)(&node, message)?;
+                            let message = C::Message::deserialize(message)?;
+                            C::control(node, message)?;
                         }
                     } else {
                         break;

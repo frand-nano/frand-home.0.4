@@ -1,6 +1,6 @@
 use std::sync::mpsc::Receiver;
 use crate::{
-    bases::{ComponentBase, MessageData, Performer, StateBase, NodeBase}, 
+    bases::{ComponentBase, MessageData, NodeBase, Performer, StateBase}, 
     result::Result,
 };
 
@@ -10,12 +10,16 @@ pub struct Component<S: StateBase> {
     output_rx: Option<Receiver<Result<MessageData>>>,
 }
 
-impl<S: StateBase> ComponentBase for Component<S> {
+impl<S: StateBase> ComponentBase for Component<S> 
+where 
+Self: crate::bases::Component,
+Self: ComponentBase<Node = S::Node>,
+{
     type State = S;
     type Node = S::Node;
     type Message = S::Message;
 
-    fn node(&self) -> &S::Node { &self.node }
+    fn node(&self) -> &Self::Node { &self.node }
     fn performer(&self) -> &Performer { &self.performer }
     fn output_rx(&mut self) -> &mut Option<Receiver<Result<MessageData>>> { &mut self.output_rx }
 
@@ -28,8 +32,8 @@ impl<S: StateBase> ComponentBase for Component<S> {
             output_rx: Some(output_rx),
         }
     }
-    
+
     fn perform(&mut self) -> Result<()> {
-        todo!()
+        self.performer.perform::<Self>(&mut self.node)
     }
 }
