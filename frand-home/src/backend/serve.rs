@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use warp::Filter;
 use crate::backend::settings::Settings;
 

@@ -1,0 +1,7 @@
+name: frand-builder
+services:
+  frand-builder:
+    image: frand-builder
+    build: 
+      context: ./
+      dockerfile: ./Dockerfile

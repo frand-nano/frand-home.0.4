@@ -16,9 +16,6 @@ services:
     restart: always
   frand-builder:
     image: frand-builder
-    build: 
-      context: ../frand-builder
-      dockerfile: ../frand-builder/Dockerfile
   frand-node:
     image: frand-node
     build: 
