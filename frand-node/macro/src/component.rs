@@ -18,7 +18,8 @@ pub fn expand(
 
     let component = quote!{
         pub struct #component_name {   
-            performer: #mp::Performer<#state_ty>,
+            #[doc(hidden)]
+            __performer: #mp::Performer<#state_ty>,
         }
     };
 
@@ -30,13 +31,13 @@ pub fn expand(
             type Node = <#state_ty as StateBase>::Node;
             type Message = <#state_ty as StateBase>::Message;
         
-            fn node(&self) -> &Self::Node { &self.performer.node() }
-            fn input_tx(&self) -> &#mp::Sender<#mp::MessageData> { self.performer.input_tx() }    
-            fn take_output_rx(&mut self) -> Option<#mp::Receiver<#mp::MessageData>> { self.performer.take_output_rx() }
-            fn perform(&mut self) -> #mp::Result<()> { self.performer.perform::<Self>() }
+            fn node(&self) -> &Self::Node { &self.__performer.node() }
+            fn input_tx(&self) -> &#mp::Sender<#mp::MessageData> { self.__performer.input_tx() }    
+            fn take_output_rx(&mut self) -> Option<#mp::Receiver<#mp::MessageData>> { self.__performer.take_output_rx() }
+            fn perform(&mut self) -> #mp::Result<()> { self.__performer.perform::<Self>() }
         
             fn new() -> Self {
-                Self { performer: #mp::Performer::new() }
+                Self { __performer: #mp::Performer::new() }
             }
         }
     };

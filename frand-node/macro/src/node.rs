@@ -18,7 +18,7 @@ pub fn expand(
     );
 
     let mod_name = Ident::new(
-        &format!("__{}_mod", state_name.to_string()).to_case(Case::Snake), 
+        &format!("{}Mod", state_name.to_string()).to_case(Case::Pascal), 
         state_name.span(),
     );
 
@@ -41,12 +41,6 @@ pub fn expand(
         quote!{ <#ty as #mp::StateBase>::Message }
     ).collect();
 
-    let pascal_names: Vec<_> = names.iter()
-    .map(|name| {
-        let pascal_name = name.to_string().to_case(Case::Pascal);
-        Ident::new(&pascal_name, name.span())
-    }).collect();
-
     let state = quote! {
         #[derive(
             Debug, Clone, Default, PartialEq, 
@@ -54,7 +48,16 @@ pub fn expand(
             #mp::reexport_serde::Deserialize,
         )]
         #state
+    };
 
+    let message_forward = quote! {
+        #[allow(non_snake_case)]
+        pub mod #message_name {
+            #(#[allow(unused_imports)] pub use super::#mod_name::Message::#names;)*
+        }
+    };
+
+    let state_impl = quote! {
         impl #mp::StateBase for #state_name {
             type Node = #mod_name::Node;
             type Message = #mod_name::Message;
@@ -113,8 +116,8 @@ pub fn expand(
     let message = quote! {
         #[derive(Debug, Clone)]
         pub enum Message {
-            #(#pascal_names(#[allow(dead_code)] #ty_messages),)*
-            State(#[allow(dead_code)] #state_name),
+            #(#[allow(non_camel_case_types)] #names(#[allow(dead_code)] #ty_messages),)*
+            #[allow(non_camel_case_types)] State(#[allow(dead_code)] #state_name),
         }
 
         impl #mp::MessageBase for Message {
@@ -122,7 +125,7 @@ pub fn expand(
 
             fn deserialize(data: #mp::MessageData) -> #mp::Result<Self> {
                 match data.next() {
-                    #((Some(#indexes), data) => Ok(Message::#pascal_names(#ty_messages::deserialize(data)?)),)*
+                    #((Some(#indexes), data) => Ok(Message::#names(#ty_messages::deserialize(data)?)),)*
                     (Some(#state_id), data) => Ok(Self::State(data.deserialize()?)),
                     (Some(_), data) => Err(data.error(
                         format!("{}::Message::deserialize() unknown id", stringify!(#state_name)),
@@ -137,15 +140,16 @@ pub fn expand(
 
     
     Ok(quote!{
-        pub type #message_name = #mod_name::Message;
-
         #state
 
-        #[doc(hidden)]
+        #message_forward
+        
+        #[allow(non_snake_case)]
         pub mod #mod_name {
             #[allow(unused_imports)]
             use super::*;
 
+            #state_impl
             #node
             #message
         }        

@@ -84,6 +84,9 @@ impl<S: StateBase> Performer<S> {
                 }
             }
         }
+
+        log::info!("self.next_messages.len(): {}", self.next_messages.len());
+        log::info!("self.performed_messages.len(): {}", self.performed_messages.len());
             
         self.performed_messages.clear();
 

@@ -28,21 +28,16 @@ test_component_macro!{}
 
 impl Component for TestComponent {
     fn update(node: &Self::Node, message: Self::Message) -> anyhow::Result<()> {
+        use TestMessage::*;
+        use TestSubMessage::*;
+
         match message {
-            TestMessage::Sub1(
-                TestSubMessage::Number1(number1)
-            ) => node.sub1.number2.emit(&(number1 + 1))?,
-
-            TestMessage::Sub1(
-                TestSubMessage::Number2(number2)
-            ) => node.sub1.number3.emit(&(number2 + 1))?,
-
-            TestMessage::Sub1(
-                TestSubMessage::Number3(number3)
-            ) => node.sub1.number1.emit(&(number3 + 1))?,
-
+            sub1(number1(n)) => node.sub1.number2.emit(&(n + 1))?,
+            sub1(number2(n)) => node.sub1.number3.emit(&(n + 1))?,
+            sub1(number3(n)) => node.sub1.number1.emit(&(n + 1))?,
             _ => {},
         }
+        
         Ok(())
     }
 }
