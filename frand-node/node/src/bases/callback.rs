@@ -1,5 +1,5 @@
 use std::{fmt::Debug, marker::PhantomData, rc::Rc};
-use super::{context::CreationContext, message::{MessageData, MessageDataId, MessageDataKey}, state::StateBase};
+use super::{message::{MessageData, MessageDataId, MessageDataKey}, state::StateBase};
 use crate::result::Result;
 
 #[derive(Clone)]
@@ -25,7 +25,7 @@ impl<S: StateBase> PartialEq for Callback<S> {
 
 impl<S: StateBase> Callback<S> {
     pub fn new(
-        context: &CreationContext,     
+        callback: &Rc<dyn Fn(MessageData)>,     
         mut ids: Vec<MessageDataId>,
         id: Option<MessageDataId>, 
     ) -> Self {
@@ -33,7 +33,7 @@ impl<S: StateBase> Callback<S> {
 
         Self { 
             ids: ids.into_boxed_slice(),
-            callback: context.callback().to_owned(),
+            callback: callback.clone(),
             _phantom: Default::default(),
         }
     }

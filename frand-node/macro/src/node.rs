@@ -54,15 +54,15 @@ pub fn expand(
             type Message = Message;
 
             fn new(
-                context: &CreationContext,   
+                callback: &Rc<dyn Fn(MessageData)>,   
                 mut ids: Vec<MessageDataId>,
                 id: Option<MessageDataId>,  
             ) -> Self {
                 if let Some(id) = id { ids.push(id); }
 
                 Self { 
-                    callback: Callback::new(context, ids.clone(), Some(#state_id)), 
-                    #(#names: #ty_nodes::new(context, ids.clone(), Some(#indexes)),)*
+                    callback: Callback::new(callback, ids.clone(), Some(#state_id)), 
+                    #(#names: #ty_nodes::new(callback, ids.clone(), Some(#indexes)),)*
                 }
             }
 

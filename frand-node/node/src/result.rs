@@ -1,6 +1,6 @@
 use std::{error::Error, fmt};
 
-use crate::bases::message::MessageError;
+use crate::bases::MessageError;
 
 pub type Result<T, E = ComponentError> = core::result::Result<T, E>;
 

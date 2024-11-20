@@ -1,9 +1,7 @@
+use std::rc::Rc;
 use crate::{
-    bases::{
-        callback::Callback, context::CreationContext, message::MessageDataId, node::NodeBase, state::StateBase
-    }, 
-    macro_prelude::{MessageBase, MessageData}, 
-    result::Result
+    bases::{Callback, MessageBase, MessageData, MessageDataId, NodeBase, StateBase}, 
+    result::Result,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -20,7 +18,7 @@ impl<V: StateBase + MessageBase> NodeBase<V> for Node<V> {
     type Message = V;
 
     fn new(
-        context: &CreationContext,   
+        callback: &Rc<dyn Fn(MessageData)>,   
         mut ids: Vec<MessageDataId>,
         id: Option<MessageDataId>,  
     ) -> Self {
@@ -28,7 +26,7 @@ impl<V: StateBase + MessageBase> NodeBase<V> for Node<V> {
 
         Self { 
             value: V::default(), 
-            callback: Callback::new(context, ids, Some(0)), 
+            callback: Callback::new(callback, ids, Some(0)), 
         }
     }
 

@@ -1,12 +1,12 @@
-use std::fmt::Debug;
-use super::{context::CreationContext, message::{MessageBase, MessageData, MessageDataId}, state::StateBase};
+use std::{fmt::Debug, rc::Rc};
+use super::{message::{MessageBase, MessageData, MessageDataId}, state::StateBase};
 use crate::result::Result;
 
 pub trait NodeBase<S: StateBase>: Debug + Clone {    
     type Message: MessageBase;
 
     fn new(
-        context: &CreationContext,     
+        callback: &Rc<dyn Fn(MessageData)>,     
         ids: Vec<MessageDataId>,
         id: Option<MessageDataId>,
     ) -> Self;
