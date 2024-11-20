@@ -17,5 +17,5 @@ pub trait ComponentBase {
 }
 
 pub trait Component: ComponentBase {
-    fn control(node: &Self::Node, message: Self::Message) -> anyhow::Result<()>;
+    fn update(node: &Self::Node, message: Self::Message) -> anyhow::Result<()>;
 }

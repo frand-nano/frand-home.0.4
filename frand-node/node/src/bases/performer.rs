@@ -76,7 +76,7 @@ impl<S: StateBase> Performer<S> {
                             self.node.__apply(message.clone())?;
                             
                             let message = C::Message::deserialize(message)?;
-                            C::control(&self.node, message)?;
+                            C::update(&self.node, message)?;
                         }
                     } else {
                         break;

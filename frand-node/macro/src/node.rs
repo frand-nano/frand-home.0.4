@@ -8,10 +8,17 @@ pub type MessageDataId = u32;
 pub fn expand(
     state: ItemStruct,
 ) -> Result<TokenStream> {
+    let mp = quote!{ frand_node::__macro_prelude };
+
     let state_name = &state.ident;
 
+    let message_name = Ident::new(
+        &format!("{}Message", state_name.to_string()).to_case(Case::Pascal), 
+        state_name.span(),
+    );
+
     let mod_name = Ident::new(
-        &format!("{}_mod", state_name.to_string()).to_case(Case::Snake), 
+        &format!("__{}_mod", state_name.to_string()).to_case(Case::Snake), 
         state_name.span(),
     );
 
@@ -25,11 +32,13 @@ pub fn expand(
     let indexes: Vec<_> = (0..fields.len() as MessageDataId).into_iter().collect();
     let names: Vec<_> = fields.iter().filter_map(|field| field.ident.as_ref()).collect();
     let tys: Vec<_> = fields.iter().map(|field| &field.ty).collect();
+
     let ty_nodes: Vec<_> = tys.iter().map(|ty| 
-        quote!{ <#ty as StateBase>::Node }
+        quote!{ <#ty as #mp::StateBase>::Node }
     ).collect();
+
     let ty_messages: Vec<_> = tys.iter().map(|ty| 
-        quote!{ <#ty as StateBase>::Message }
+        quote!{ <#ty as #mp::StateBase>::Message }
     ).collect();
 
     let pascal_names: Vec<_> = names.iter()
@@ -41,12 +50,12 @@ pub fn expand(
     let state = quote! {
         #[derive(
             Debug, Clone, Default, PartialEq, 
-            frand_node::macro_prelude::reexport_serde::Serialize, 
-            frand_node::macro_prelude::reexport_serde::Deserialize,
+            #mp::reexport_serde::Serialize, 
+            #mp::reexport_serde::Deserialize,
         )]
         #state
 
-        impl StateBase for #state_name {
+        impl #mp::StateBase for #state_name {
             type Node = #mod_name::Node;
             type Message = #mod_name::Message;
         }
@@ -57,31 +66,31 @@ pub fn expand(
         #[derive(Debug, Clone, PartialEq)]
         pub struct Node {
             #(pub #names: #ty_nodes,)*
-            callback: Callback<#state_name>,
+            callback: #mp::Callback<#state_name>,
         }
 
-        impl NodeBase for Node {
+        impl #mp::NodeBase for Node {
             type State = #state_name;
 
-            fn emit(&self, state: &#state_name) -> Result<()> {
+            fn emit(&self, state: &#state_name) -> #mp::Result<()> {
                 self.callback.emit(state)
             }
 
             fn new(
-                callback: &Sender<MessageData>,   
-                mut ids: Vec<MessageDataId>,
-                id: Option<MessageDataId>,  
+                callback: &#mp::Sender<#mp::MessageData>,   
+                mut ids: Vec<#mp::MessageDataId>,
+                id: Option<#mp::MessageDataId>,  
             ) -> Self {
                 if let Some(id) = id { ids.push(id); }
 
                 Self { 
-                    callback: Callback::new(callback, ids.clone(), Some(#state_id)), 
+                    callback: #mp::Callback::new(callback, ids.clone(), Some(#state_id)), 
                     #(#names: #ty_nodes::new(callback, ids.clone(), Some(#indexes)),)*
                 }
             }
 
             #[doc(hidden)]
-            fn __apply(&mut self, data: MessageData) -> Result<()> {
+            fn __apply(&mut self, data: #mp::MessageData) -> #mp::Result<()> {
                 match data.next() {
                     #((Some(#indexes), data) => self.#names.__apply(data),)*
                     (Some(#state_id), data) => Ok(self.__apply_state(data.deserialize()?)),
@@ -104,14 +113,14 @@ pub fn expand(
     let message = quote! {
         #[derive(Debug, Clone)]
         pub enum Message {
-            #(#pascal_names(#ty_messages),)*
-            State(#state_name),
+            #(#pascal_names(#[allow(dead_code)] #ty_messages),)*
+            State(#[allow(dead_code)] #state_name),
         }
 
-        impl MessageBase for Message {
+        impl #mp::MessageBase for Message {
             type State = #state_name;
 
-            fn deserialize(data: MessageData) -> Result<Self, ComponentError> {
+            fn deserialize(data: #mp::MessageData) -> #mp::Result<Self> {
                 match data.next() {
                     #((Some(#indexes), data) => Ok(Message::#pascal_names(#ty_messages::deserialize(data)?)),)*
                     (Some(#state_id), data) => Ok(Self::State(data.deserialize()?)),
@@ -128,15 +137,15 @@ pub fn expand(
 
     
     Ok(quote!{
+        pub type #message_name = #mod_name::Message;
+
         #state
 
+        #[doc(hidden)]
         pub mod #mod_name {
             #[allow(unused_imports)]
             use super::*;
 
-            #[allow(unused_imports)]
-            use frand_node::macro_prelude::*;
-            
             #node
             #message
         }        

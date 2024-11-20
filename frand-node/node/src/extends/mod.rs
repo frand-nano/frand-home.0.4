@@ -1,7 +1,3 @@
 mod node;
-mod component;
 
-pub use self::{
-    component::*,
-    node::*,
-};
+pub use self::node::*;
