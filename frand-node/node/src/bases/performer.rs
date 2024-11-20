@@ -16,6 +16,7 @@ pub struct Performer {
     pub input_tx: Sender<MessageData>,
     pub input_rx: Receiver<MessageData>,
     pub output_tx: Sender<Result<MessageData>>,
+    pub output_rx: Option<Receiver<Result<MessageData>>>,
     pub performed_messages: HashSet<MessageDataKey>,
     pub next_messages: Vec<MessageData>,
 }
@@ -37,8 +38,9 @@ impl Debug for Performer {
 impl Performer {
     pub fn callback(&self) -> &Rc<dyn Fn(MessageData)> { &self.callback }
     pub fn input_tx(&self) -> &Sender<MessageData> { &self.input_tx }
+    pub fn take_output_rx(&mut self) -> Option<Receiver<Result<MessageData>>> { self.output_rx.take() }
 
-    pub fn new() -> (Self, Receiver<Result<MessageData>>) {
+    pub fn new() -> Self {
         let (node_tx, node_rx) = channel();
         let (input_tx, input_rx) = channel();
         let (output_tx, output_rx) = channel();
@@ -50,19 +52,17 @@ impl Performer {
             }
         });
 
-        (
-            Self { 
-                callback,
-                node_tx,
-                node_rx,
-                input_tx, 
-                input_rx, 
-                output_tx, 
-                performed_messages: HashSet::new(),
-                next_messages: Vec::new(),
-            },
-            output_rx,
-        )
+        Self { 
+            callback,
+            node_tx,
+            node_rx,
+            input_tx, 
+            input_rx, 
+            output_tx, 
+            output_rx: Some(output_rx),
+            performed_messages: HashSet::new(),
+            next_messages: Vec::new(),
+        }
     }
 
     pub fn perform<C: Component>(
@@ -78,8 +78,10 @@ impl Performer {
             for message in &messages {
                 node.__apply(message.clone())?;
 
-                if let Err(err) = self.output_tx.send(Ok(message.clone())) {
-                    log::error!("Performer output_tx.send(message) err:{err}");
+                if self.output_rx.is_none() {
+                    if let Err(err) = self.output_tx.send(Ok(message.clone())) {
+                        log::error!("Performer output_tx.send(message) err:{err}");
+                    }
                 }
             }
 
