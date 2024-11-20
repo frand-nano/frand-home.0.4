@@ -6,9 +6,15 @@ use quote::quote;
 pub type MessageDataId = u32;
 
 pub fn expand(
-    mod_name: &Ident,
-    state: &ItemStruct,
+    state: ItemStruct,
 ) -> Result<TokenStream> {
+    let state_name = &state.ident;
+
+    let mod_name = Ident::new(
+        &format!("{}_mod", state_name.to_string()).to_case(Case::Snake), 
+        state_name.span(),
+    );
+
     let fields: Vec<&Field> = match &state.fields {
         Fields::Named(fields_named) => fields_named.named.iter().collect(),
         _ => Vec::default(),
@@ -33,12 +39,16 @@ pub fn expand(
     }).collect();
 
     let state = quote! {
-        #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+        #[derive(
+            Debug, Clone, Default, PartialEq, 
+            frand_node::macro_prelude::reexport_serde::Serialize, 
+            frand_node::macro_prelude::reexport_serde::Deserialize,
+        )]
         #state
 
-        impl StateBase for State {
-            type Node = Node;
-            type Message = Message;
+        impl StateBase for #state_name {
+            type Node = #mod_name::Node;
+            type Message = #mod_name::Message;
         }
     };
 
@@ -47,13 +57,11 @@ pub fn expand(
         #[derive(Debug, Clone, PartialEq)]
         pub struct Node {
             #(pub #names: #ty_nodes,)*
-            callback: Callback<State>,
+            callback: Callback<#state_name>,
         }
 
-        impl NodeBase<State> for Node {
-            type Message = Message;
-
-            fn emit(&self, state: &State) -> Result<()> {
+        impl NodeBase<#state_name> for Node {
+            fn emit(&self, state: &#state_name) -> Result<()> {
                 self.callback.emit(state)
             }
 
@@ -76,16 +84,16 @@ pub fn expand(
                     #((Some(#indexes), data) => self.#names.__apply(data),)*
                     (Some(#state_id), data) => Ok(self.__apply_state(data.deserialize()?)),
                     (Some(_), data) => Err(data.error(
-                        format!("{}::apply() unknown id", stringify!(#mod_name)),
+                        format!("{}::apply() unknown id", stringify!(#state_name)),
                     )),
                     (None, data) => Err(data.error(
-                        format!("{}::apply() data has no more id", stringify!(#mod_name)),
+                        format!("{}::apply() data has no more id", stringify!(#state_name)),
                     )),
                 }     
             }
 
             #[doc(hidden)]
-            fn __apply_state(&mut self, state: State) {
+            fn __apply_state(&mut self, state: #state_name) {
                 #(self.#names.__apply_state(state.#names);)*
             }
         }
@@ -95,7 +103,7 @@ pub fn expand(
         #[derive(Debug, Clone)]
         pub enum Message {
             #(#pascal_names(#ty_messages),)*
-            State(State),
+            State(#state_name),
         }
 
         impl MessageBase for Message {
@@ -104,19 +112,29 @@ pub fn expand(
                     #((Some(#indexes), data) => Ok(Message::#pascal_names(#ty_messages::deserialize_message(data)?)),)*
                     (Some(#state_id), data) => Ok(Self::State(data.deserialize()?)),
                     (Some(_), data) => Err(data.error(
-                        format!("{}::Message::deserialize_message() unknown id", stringify!(#mod_name)),
+                        format!("{}::Message::deserialize_message() unknown id", stringify!(#state_name)),
                     )),
                     (None, data) => Err(data.error(
-                        format!("{}::Message::deserialize_message() data has no more id", stringify!(#mod_name)),
+                        format!("{}::Message::deserialize_message() data has no more id", stringify!(#state_name)),
                     )),
                 }     
             }
         }
     };
 
-    Ok(quote!{        
+    
+    Ok(quote!{
         #state
-        #node
-        #message
+
+        pub mod #mod_name {
+            #[allow(unused_imports)]
+            use super::*;
+
+            #[allow(unused_imports)]
+            use frand_node::macro_prelude::*;
+            
+            #node
+            #message
+        }        
     })
 }

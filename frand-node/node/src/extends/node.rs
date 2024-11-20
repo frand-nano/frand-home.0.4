@@ -15,8 +15,6 @@ impl<V: StateBase + MessageBase> Node<V> {
 }
 
 impl<V: StateBase + MessageBase> NodeBase<V> for Node<V> {
-    type Message = V;
-
     fn emit(&self, state: &V) -> Result<()> {
         self.callback.emit(state)
     }

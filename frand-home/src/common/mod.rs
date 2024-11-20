@@ -3,12 +3,20 @@ use yew::{function_component, Html};
 
 #[node]
 pub struct Test {
+    pub sub1: TestSub,
+    pub sub2: TestSub,
+}
+
+test_macro!{}
+
+#[node]
+pub struct TestSub {
     pub number1: i32,
     pub number2: i32,
     pub number3: i32,
 }
 
-test_macro!{}
+test_sub_macro!{}
 
 /*
 #[test]

@@ -1,10 +1,8 @@
 use std::{fmt::Debug, rc::Rc};
-use super::{message::{MessageBase, MessageData, MessageDataId}, state::StateBase};
+use super::{message::{MessageData, MessageDataId}, state::StateBase};
 use crate::result::Result;
 
 pub trait NodeBase<S: StateBase>: Debug + Clone {    
-    type Message: MessageBase;
-
     fn emit(&self, state: &S) -> Result<()>;
 
     fn new(
