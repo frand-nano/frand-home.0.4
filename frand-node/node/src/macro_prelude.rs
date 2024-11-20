@@ -1,4 +1,4 @@
-pub use std::rc::Rc;
+pub use std::sync::mpsc::Sender;
 
 pub use crate::{
     result::{ComponentError, Result},

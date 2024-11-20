@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::mpsc::Sender;
 use crate::{
     bases::{Callback, MessageBase, MessageData, MessageDataId, NodeBase, StateBase}, 
     result::Result,
@@ -22,7 +22,7 @@ impl<V: StateBase + MessageBase> NodeBase for Node<V> {
     }
 
     fn new(
-        callback: &Rc<dyn Fn(MessageData)>,   
+        callback: &Sender<MessageData>,   
         mut ids: Vec<MessageDataId>,
         id: Option<MessageDataId>,  
     ) -> Self {

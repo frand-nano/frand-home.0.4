@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::Debug, rc::Rc, sync::mpsc::{channel, Receiver, Sender}};
+use std::{collections::HashSet, sync::mpsc::{channel, Receiver, Sender}};
 use crate::{
     bases::{
         message::{MessageBase, MessageData, MessageDataKey}, 
@@ -7,53 +7,32 @@ use crate::{
     result::Result,
 };
 
-use super::Component;
+use super::{Component, StateBase};
 
-pub struct Performer {    
-    pub callback: Rc<dyn Fn(MessageData)>, 
-    pub node_tx: Sender<MessageData>,
-    pub node_rx: Receiver<MessageData>,
-    pub input_tx: Sender<MessageData>,
-    pub input_rx: Receiver<MessageData>,
-    pub output_tx: Sender<Result<MessageData>>,
-    pub output_rx: Option<Receiver<Result<MessageData>>>,
-    pub performed_messages: HashSet<MessageDataKey>,
-    pub next_messages: Vec<MessageData>,
+pub struct Performer<S: StateBase> {     
+    node: S::Node,     
+    node_tx: Sender<MessageData>,
+    node_rx: Receiver<MessageData>,
+    input_tx: Sender<MessageData>,
+    input_rx: Receiver<MessageData>,
+    output_tx: Sender<MessageData>,
+    output_rx: Option<Receiver<MessageData>>,
+    performed_messages: HashSet<MessageDataKey>,
+    next_messages: Vec<MessageData>,
 }
 
-impl Debug for Performer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Performer")
-        .field("node_tx", &self.node_tx)
-        .field("node_rx", &self.node_rx)
-        .field("input_tx", &self.input_tx)
-        .field("input_rx", &self.input_rx)
-        .field("output_tx", &self.output_tx)
-        .field("performed_messages", &self.performed_messages)
-        .field("next_messages", &self.next_messages)
-        .finish()
-    }
-}
-
-impl Performer {
-    pub fn callback(&self) -> &Rc<dyn Fn(MessageData)> { &self.callback }
+impl<S: StateBase> Performer<S> {
+    pub fn node(&self) -> &S::Node { &self.node }
     pub fn input_tx(&self) -> &Sender<MessageData> { &self.input_tx }
-    pub fn take_output_rx(&mut self) -> Option<Receiver<Result<MessageData>>> { self.output_rx.take() }
+    pub fn take_output_rx(&mut self) -> Option<Receiver<MessageData>> { self.output_rx.take() }
 
     pub fn new() -> Self {
         let (node_tx, node_rx) = channel();
         let (input_tx, input_rx) = channel();
         let (output_tx, output_rx) = channel();
 
-        let callback_node_tx = node_tx.clone();
-        let callback = Rc::new(move |message| {
-            if let Err(err) = callback_node_tx.send(message) {
-                log::error!("Performer node_tx.send(message) err:{err}");
-            }
-        });
-
         Self { 
-            callback,
+            node: S::Node::new(&node_tx, vec![], None), 
             node_tx,
             node_rx,
             input_tx, 
@@ -65,10 +44,9 @@ impl Performer {
         }
     }
 
-    pub fn perform<C: Component>(
-        &mut self, 
-        node: &mut C::Node,
-    ) -> Result<()> {
+    pub fn perform<C: Component>(&mut self) -> Result<()> 
+    where C: Component<Node = S::Node>
+    {
         let mut messages = Vec::new();
         messages.extend(self.input_rx.try_iter());
         messages.extend(self.node_rx.try_iter());
@@ -76,19 +54,15 @@ impl Performer {
 
         while !messages.is_empty() {    
             for message in &messages {
-                node.__apply(message.clone())?;
+                self.node.__apply(message.clone())?;
 
                 if self.output_rx.is_none() {
-                    if let Err(err) = self.output_tx.send(Ok(message.clone())) {
-                        log::error!("Performer output_tx.send(message) err:{err}");
-                    }
+                    self.output_tx.send(message.clone())?;
                 }
             }
 
             for message in messages.drain(..) {
-                if let Err(err) = self.node_tx.send(message) {
-                    log::error!("Performer node_tx.send(message) err:{err}");
-                }
+                self.node_tx.send(message)?;
 
                 loop {
                     if let Ok(message) = self.node_rx.try_recv() {
@@ -97,10 +71,10 @@ impl Performer {
                         } else {
                             self.performed_messages.insert(message.ids().clone());
         
-                            node.__apply(message.clone())?;
+                            self.node.__apply(message.clone())?;
                             
                             let message = C::Message::deserialize(message)?;
-                            C::control(node, message)?;
+                            C::control(&self.node, message)?;
                         }
                     } else {
                         break;

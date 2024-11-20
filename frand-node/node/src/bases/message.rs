@@ -1,5 +1,5 @@
-use std::io::Cursor;
-use std::fmt::Debug;
+use std::{error::Error, io::Cursor};
+use std::fmt::{self, Debug};
 use serde::{Deserialize, Serialize};
 use crate::result::{ComponentError, Result};
 
@@ -29,6 +29,14 @@ pub trait MessageBase: Debug + Clone + Sized {
     
     fn deserialize(data: MessageData) -> Result<Self>;
 }
+
+impl fmt::Display for MessageError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for MessageError {}
 
 impl MessageData {
     pub fn ids(&self) -> &MessageDataKey { &self.ids }
@@ -77,13 +85,11 @@ impl MessageData {
         self, 
         message: impl AsRef<str>,
     ) -> ComponentError {
-        ComponentError::Message(
-            MessageError { 
-                depth: self.depth, 
-                ids: self.ids, 
-                value: self.value, 
-                message: message.as_ref().to_owned(), 
-            }
-        )
+        MessageError { 
+            depth: self.depth, 
+            ids: self.ids, 
+            value: self.value, 
+            message: message.as_ref().to_owned(), 
+        }.into()
     }
 }

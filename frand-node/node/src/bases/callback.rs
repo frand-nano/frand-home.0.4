@@ -1,11 +1,11 @@
-use std::{fmt::Debug, marker::PhantomData, rc::Rc};
+use std::{fmt::Debug, marker::PhantomData, sync::mpsc::Sender};
 use super::{message::{MessageData, MessageDataId, MessageDataKey}, state::StateBase};
 use crate::result::Result;
 
 #[derive(Clone)]
 pub struct Callback<S: StateBase> {
     ids: MessageDataKey,
-    callback: Rc<dyn Fn(MessageData)>,    
+    callback: Sender<MessageData>,    
     __phantom: PhantomData<S>,  
 }
 
@@ -25,7 +25,7 @@ impl<S: StateBase> PartialEq for Callback<S> {
 
 impl<S: StateBase> Callback<S> {
     pub fn new(
-        callback: &Rc<dyn Fn(MessageData)>,     
+        callback: &Sender<MessageData>,     
         mut ids: Vec<MessageDataId>,
         id: Option<MessageDataId>, 
     ) -> Self {
@@ -39,6 +39,8 @@ impl<S: StateBase> Callback<S> {
     }
 
     pub fn emit(&self, state: &S) -> Result<()> {
-        Ok((self.callback)(MessageData::serialize(&self.ids, None, state)?))
+        Ok(self.callback.send(
+            MessageData::serialize(&self.ids, None, state)?
+        )?)
     }
 }

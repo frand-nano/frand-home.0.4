@@ -68,7 +68,7 @@ pub fn expand(
             }
 
             fn new(
-                callback: &Rc<dyn Fn(MessageData)>,   
+                callback: &Sender<MessageData>,   
                 mut ids: Vec<MessageDataId>,
                 id: Option<MessageDataId>,  
             ) -> Self {

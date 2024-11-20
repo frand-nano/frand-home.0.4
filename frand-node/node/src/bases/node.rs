@@ -1,4 +1,4 @@
-use std::{fmt::Debug, rc::Rc};
+use std::{fmt::Debug, sync::mpsc::Sender};
 use super::{message::{MessageData, MessageDataId}, state::StateBase};
 use crate::result::Result;
 
@@ -8,7 +8,7 @@ pub trait NodeBase: Debug + Clone {
     fn emit(&self, state: &Self::State) -> Result<()>;
 
     fn new(
-        callback: &Rc<dyn Fn(MessageData)>,     
+        callback: &Sender<MessageData>,     
         ids: Vec<MessageDataId>,
         id: Option<MessageDataId>,
     ) -> Self;

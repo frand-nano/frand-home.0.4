@@ -10,12 +10,12 @@ pub trait ComponentBase {
     fn node(&self) -> &Self::Node;
     
     fn input_tx(&self) -> &Sender<MessageData>;   
-    fn take_output_rx(&mut self) -> Option<Receiver<Result<MessageData>>>;
+    fn take_output_rx(&mut self) -> Option<Receiver<MessageData>>;
     
     fn new() -> Self;
     fn perform(&mut self) -> Result<()>;    
 }
 
 pub trait Component: ComponentBase {
-    fn control(node: &Self::Node, message: Self::Message) -> Result<()>;
+    fn control(node: &Self::Node, message: Self::Message) -> anyhow::Result<()>;
 }
