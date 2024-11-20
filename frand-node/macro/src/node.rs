@@ -60,7 +60,9 @@ pub fn expand(
             callback: Callback<#state_name>,
         }
 
-        impl NodeBase<#state_name> for Node {
+        impl NodeBase for Node {
+            type State = #state_name;
+
             fn emit(&self, state: &#state_name) -> Result<()> {
                 self.callback.emit(state)
             }
@@ -107,15 +109,17 @@ pub fn expand(
         }
 
         impl MessageBase for Message {
-            fn deserialize_message(data: MessageData) -> Result<Self, ComponentError> {
+            type State = #state_name;
+
+            fn deserialize(data: MessageData) -> Result<Self, ComponentError> {
                 match data.next() {
-                    #((Some(#indexes), data) => Ok(Message::#pascal_names(#ty_messages::deserialize_message(data)?)),)*
+                    #((Some(#indexes), data) => Ok(Message::#pascal_names(#ty_messages::deserialize(data)?)),)*
                     (Some(#state_id), data) => Ok(Self::State(data.deserialize()?)),
                     (Some(_), data) => Err(data.error(
-                        format!("{}::Message::deserialize_message() unknown id", stringify!(#state_name)),
+                        format!("{}::Message::deserialize() unknown id", stringify!(#state_name)),
                     )),
                     (None, data) => Err(data.error(
-                        format!("{}::Message::deserialize_message() data has no more id", stringify!(#state_name)),
+                        format!("{}::Message::deserialize() data has no more id", stringify!(#state_name)),
                     )),
                 }     
             }

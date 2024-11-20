@@ -1,9 +1,13 @@
 use std::sync::mpsc::{Receiver, Sender};
 use crate::result::Result;
-use super::{message::MessageData, state::StateBase, Performer};
+use super::{message::MessageData, state::StateBase, MessageBase, NodeBase, Performer};
 
-pub trait ComponentBase<S: StateBase> {
-    fn node(&self) -> &S::Node;
+pub trait ComponentBase {
+    type State: StateBase;
+    type Node: NodeBase;
+    type Message: MessageBase;
+
+    fn node(&self) -> &Self::Node;
     fn performer(&self) -> &Performer;
     
     fn input_tx(&self) -> &Sender<MessageData> { self.performer().input_tx() }    
@@ -13,6 +17,6 @@ pub trait ComponentBase<S: StateBase> {
     fn new() -> Self;
 }
 
-pub trait Component<S: StateBase>: ComponentBase<S> {
-    fn control(node: &S::Node, message: S::Message) -> Result<()>;
+pub trait Component: ComponentBase {
+    fn control(node: &Self::Node, message: Self::Message) -> Result<()>;
 }

@@ -2,8 +2,10 @@ use std::{fmt::Debug, rc::Rc};
 use super::{message::{MessageData, MessageDataId}, state::StateBase};
 use crate::result::Result;
 
-pub trait NodeBase<S: StateBase>: Debug + Clone {    
-    fn emit(&self, state: &S) -> Result<()>;
+pub trait NodeBase: Debug + Clone {    
+    type State: StateBase;
+
+    fn emit(&self, state: &Self::State) -> Result<()>;
 
     fn new(
         callback: &Rc<dyn Fn(MessageData)>,     
@@ -15,5 +17,5 @@ pub trait NodeBase<S: StateBase>: Debug + Clone {
     fn __apply(&mut self, data: MessageData) -> Result<()>;
 
     #[doc(hidden)]
-    fn __apply_state(&mut self, state: S);
+    fn __apply_state(&mut self, state: Self::State);
 }

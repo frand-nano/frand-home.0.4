@@ -10,7 +10,11 @@ pub struct Component<S: StateBase> {
     output_rx: Option<Receiver<Result<MessageData>>>,
 }
 
-impl<S: StateBase> ComponentBase<S> for Component<S> {
+impl<S: StateBase> ComponentBase for Component<S> {
+    type State = S;
+    type Node = S::Node;
+    type Message = S::Message;
+
     fn node(&self) -> &S::Node { &self.node }
     fn performer(&self) -> &Performer { &self.performer }
     fn output_rx(&mut self) -> &mut Option<Receiver<Result<MessageData>>> { &mut self.output_rx }

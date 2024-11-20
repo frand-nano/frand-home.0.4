@@ -6,7 +6,7 @@ use crate::result::Result;
 pub struct Callback<S: StateBase> {
     ids: MessageDataKey,
     callback: Rc<dyn Fn(MessageData)>,    
-    _phantom: PhantomData<S>,  
+    __phantom: PhantomData<S>,  
 }
 
 impl<S: StateBase> Debug for Callback<S> {
@@ -34,7 +34,7 @@ impl<S: StateBase> Callback<S> {
         Self { 
             ids: ids.into_boxed_slice(),
             callback: callback.clone(),
-            _phantom: Default::default(),
+            __phantom: Default::default(),
         }
     }
 

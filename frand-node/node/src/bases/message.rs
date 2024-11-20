@@ -1,7 +1,9 @@
 use std::io::Cursor;
 use std::fmt::Debug;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use crate::result::{ComponentError, Result};
+
+use super::StateBase;
 
 pub type MessageDataId = u32;
 pub type MessageDataKey = Box<[MessageDataId]>;
@@ -23,16 +25,18 @@ pub struct MessageData {
 }
 
 pub trait MessageBase: Debug + Clone + Sized {
-    fn deserialize_message(data: MessageData) -> Result<Self>;
+    type State: StateBase;
+    
+    fn deserialize(data: MessageData) -> Result<Self>;
 }
 
 impl MessageData {
     pub fn ids(&self) -> &MessageDataKey { &self.ids }
 
-    pub fn serialize<V: Serialize>(
+    pub fn serialize<S: StateBase>(
         ids: &MessageDataKey, 
         id: Option<MessageDataId>, 
-        value: &V,
+        value: &S,
     ) -> Result<Self> {
         let mut ids = ids.to_vec();
 
@@ -54,7 +58,7 @@ impl MessageData {
         }
     }
 
-    pub fn deserialize<V: DeserializeOwned>(self) -> Result<V> {
+    pub fn deserialize<S: StateBase>(self) -> Result<S> {
         ciborium::from_reader(Cursor::new(&self.value))
         .map_err(|err| self.error(err.to_string()))
     }

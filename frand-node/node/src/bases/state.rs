@@ -9,8 +9,12 @@ mod frand_node {
     }
 }
 
-pub trait StateBase: Default + Debug + Clone + PartialEq + Serialize + DeserializeOwned {
-    type Node: NodeBase<Self>;
+pub trait StateBase: Default + Debug + Clone + PartialEq + Serialize + DeserializeOwned 
+where 
+    <Self as StateBase>::Node: NodeBase<State = Self>,
+    <Self as StateBase>::Message: MessageBase<State = Self>,
+{
+    type Node: NodeBase;
     type Message: MessageBase;
 }
 
@@ -23,10 +27,13 @@ macro_rules! impl_state_for {
         $(
             impl frand_node::macro_prelude::StateBase for $tys {
                 type Node = frand_node::macro_prelude::Node<Self>;
-                type Message = $tys;
+                type Message = Self;
             }
+
             impl frand_node::macro_prelude::MessageBase for $tys {
-                fn deserialize_message(
+                type State = Self;
+
+                fn deserialize(
                     data: frand_node::macro_prelude::MessageData,
                 ) -> frand_node::macro_prelude::Result<Self> {
                     match data.next() {

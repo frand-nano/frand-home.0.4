@@ -97,7 +97,7 @@ impl Performer {
         
                             node.__apply(message.clone())?;
                             
-                            let message = S::Message::deserialize_message(message)?;
+                            let message = S::Message::deserialize(message)?;
                             (control)(&node, message)?;
                         }
                     } else {
