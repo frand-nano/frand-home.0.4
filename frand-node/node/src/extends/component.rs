@@ -1,30 +1,31 @@
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Receiver;
 use crate::{
     bases::{ComponentBase, MessageData, Performer, StateBase, NodeBase}, 
     result::Result,
 };
 
-#[derive(Debug)]
 pub struct Component<S: StateBase> {    
     node: S::Node,     
-    performer: Performer<S>,
+    performer: Performer,
+    output_rx: Option<Receiver<Result<MessageData>>>,
 }
 
 impl<S: StateBase> ComponentBase<S> for Component<S> {
     fn node(&self) -> &S::Node { &self.node }
-    fn input_tx(&self) -> &Sender<MessageData> { &self.performer.input_tx }    
-    fn output_rx(&mut self) -> Receiver<Result<MessageData>> { self.performer.output_rx() }
+    fn performer(&self) -> &Performer { &self.performer }
+    fn output_rx(&mut self) -> &mut Option<Receiver<Result<MessageData>>> { &mut self.output_rx }
 
-    fn new(control: Box<dyn Fn(&S::Node, S::Message) -> Result<()>>) -> Self {
-        let performer = Performer::new(control);
+    fn new() -> Self {
+        let (performer, output_rx) = Performer::new();
 
         Self { 
             node: S::Node::new(performer.callback(), vec![], None), 
             performer,
+            output_rx: Some(output_rx),
         }
     }
-
-    fn perform(&mut self) -> Result<()> {        
-        self.performer.perform(&mut self.node)
+    
+    fn perform(&mut self) -> Result<()> {
+        todo!()
     }
 }

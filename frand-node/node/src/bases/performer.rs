@@ -8,19 +8,18 @@ use crate::{
     result::Result,
 };
 
-pub struct Performer<S: StateBase> {    
-    pub control: Box<dyn Fn(&S::Node, S::Message) -> Result<()>>,
+pub struct Performer {    
     pub callback: Rc<dyn Fn(MessageData)>, 
     pub node_tx: Sender<MessageData>,
     pub node_rx: Receiver<MessageData>,
     pub input_tx: Sender<MessageData>,
     pub input_rx: Receiver<MessageData>,
-    pub output_tx: Vec<Sender<Result<MessageData>>>,
+    pub output_tx: Sender<Result<MessageData>>,
     pub performed_messages: HashSet<MessageDataKey>,
     pub next_messages: Vec<MessageData>,
 }
 
-impl<S: StateBase> Debug for Performer<S> {
+impl Debug for Performer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Performer")
         .field("node_tx", &self.node_tx)
@@ -34,12 +33,14 @@ impl<S: StateBase> Debug for Performer<S> {
     }
 }
 
-impl<S: StateBase> Performer<S> {
+impl Performer {
     pub fn callback(&self) -> &Rc<dyn Fn(MessageData)> { &self.callback }
+    pub fn input_tx(&self) -> &Sender<MessageData> { &self.input_tx }
 
-    pub fn new(control: Box<dyn Fn(&S::Node, S::Message) -> Result<()>>) -> Self {
+    pub fn new() -> (Self, Receiver<Result<MessageData>>) {
         let (node_tx, node_rx) = channel();
         let (input_tx, input_rx) = channel();
+        let (output_tx, output_rx) = channel();
 
         let callback_node_tx = node_tx.clone();
         let callback = Rc::new(move |message| {
@@ -48,26 +49,26 @@ impl<S: StateBase> Performer<S> {
             }
         });
 
-        Self { 
-            control,
-            callback,
-            node_tx,
-            node_rx,
-            input_tx, 
-            input_rx, 
-            output_tx: Vec::new(), 
-            performed_messages: HashSet::new(),
-            next_messages: Vec::new(),
-        }
+        (
+            Self { 
+                callback,
+                node_tx,
+                node_rx,
+                input_tx, 
+                input_rx, 
+                output_tx, 
+                performed_messages: HashSet::new(),
+                next_messages: Vec::new(),
+            },
+            output_rx,
+        )
     }
 
-    pub fn output_rx(&mut self) -> Receiver<Result<MessageData>> {
-        let (output_tx, output_rx) = channel();
-        self.output_tx.push(output_tx);
-        output_rx
-    }
-
-    pub fn perform(&mut self, node: &mut S::Node) -> Result<()> {
+    pub fn perform<S: StateBase>(
+        &mut self, 
+        node: &mut S::Node,
+        control: Box<dyn Fn(&S::Node, S::Message) -> Result<()>>,
+    ) -> Result<()> {
         let mut messages = Vec::new();
         messages.extend(self.input_rx.try_iter());
         messages.extend(self.node_rx.try_iter());
@@ -77,14 +78,8 @@ impl<S: StateBase> Performer<S> {
             for message in &messages {
                 node.__apply(message.clone())?;
 
-                let mut index = 0;
-                while index < self.output_tx.len() {
-                    if let Err(err) = self.output_tx[index].send(Ok(message.clone())) {
-                        log::error!("Performer output_tx.send(message) err:{err}");
-                        self.output_tx.remove(index);
-                    } else {
-                        index += 1;
-                    }
+                if let Err(err) = self.output_tx.send(Ok(message.clone())) {
+                    log::error!("Performer output_tx.send(message) err:{err}");
                 }
             }
 
@@ -103,7 +98,7 @@ impl<S: StateBase> Performer<S> {
                             node.__apply(message.clone())?;
                             
                             let message = S::Message::deserialize_message(message)?;
-                            (self.control)(&node, message)?;
+                            (control)(&node, message)?;
                         }
                     } else {
                         break;

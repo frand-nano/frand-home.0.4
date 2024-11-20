@@ -53,6 +53,10 @@ pub fn expand(
         impl NodeBase<State> for Node {
             type Message = Message;
 
+            fn emit(&self, state: &State) -> Result<()> {
+                self.callback.emit(state)
+            }
+
             fn new(
                 callback: &Rc<dyn Fn(MessageData)>,   
                 mut ids: Vec<MessageDataId>,
@@ -64,10 +68,6 @@ pub fn expand(
                     callback: Callback::new(callback, ids.clone(), Some(#state_id)), 
                     #(#names: #ty_nodes::new(callback, ids.clone(), Some(#indexes)),)*
                 }
-            }
-
-            fn emit(&self, state: &State) -> Result<()> {
-                self.callback.emit(state)
             }
 
             #[doc(hidden)]

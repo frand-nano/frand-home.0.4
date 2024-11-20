@@ -17,6 +17,10 @@ impl<V: StateBase + MessageBase> Node<V> {
 impl<V: StateBase + MessageBase> NodeBase<V> for Node<V> {
     type Message = V;
 
+    fn emit(&self, state: &V) -> Result<()> {
+        self.callback.emit(state)
+    }
+
     fn new(
         callback: &Rc<dyn Fn(MessageData)>,   
         mut ids: Vec<MessageDataId>,
@@ -28,10 +32,6 @@ impl<V: StateBase + MessageBase> NodeBase<V> for Node<V> {
             value: V::default(), 
             callback: Callback::new(callback, ids, Some(0)), 
         }
-    }
-
-    fn emit(&self, state: &V) -> Result<()> {
-        self.callback.emit(state)
     }
 
     #[doc(hidden)]
