@@ -1,5 +1,5 @@
-use std::{error::Error, fmt, sync::mpsc::SendError};
-
+use std::{error::Error, fmt};
+use crossbeam::channel::SendError;
 use crate::bases::{MessageData, MessageError};
 
 pub type Result<T, E = ComponentError> = core::result::Result<T, E>;

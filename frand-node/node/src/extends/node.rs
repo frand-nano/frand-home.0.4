@@ -1,4 +1,4 @@
-use std::sync::mpsc::Sender;
+use crossbeam::channel::Sender;
 use crate::{
     bases::{Callback, MessageBase, MessageData, MessageDataId, NodeBase, StateBase}, 
     result::Result,

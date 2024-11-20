@@ -1,4 +1,6 @@
-use std::{collections::HashSet, sync::mpsc::{channel, Receiver, Sender}};
+use std::collections::HashSet;
+use crossbeam::channel::{unbounded, Receiver, Sender};
+
 use crate::{
     bases::{
         message::{MessageBase, MessageData, MessageDataKey}, 
@@ -27,9 +29,9 @@ impl<S: StateBase> Performer<S> {
     pub fn take_output_rx(&mut self) -> Option<Receiver<MessageData>> { self.output_rx.take() }
 
     pub fn new() -> Self {
-        let (node_tx, node_rx) = channel();
-        let (input_tx, input_rx) = channel();
-        let (output_tx, output_rx) = channel();
+        let (node_tx, node_rx) = unbounded();
+        let (input_tx, input_rx) = unbounded();
+        let (output_tx, output_rx) = unbounded();
 
         Self { 
             node: S::Node::new(&node_tx, vec![], None), 

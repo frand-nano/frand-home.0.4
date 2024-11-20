@@ -1,4 +1,4 @@
-pub use std::sync::mpsc::Sender;
+pub use crossbeam::channel::Sender;
 
 pub use crate::{
     result::{ComponentError, Result},

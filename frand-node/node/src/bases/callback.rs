@@ -1,4 +1,5 @@
-use std::{fmt::Debug, marker::PhantomData, sync::mpsc::Sender};
+use std::{fmt::Debug, marker::PhantomData};
+use crossbeam::channel::Sender;
 use super::{message::{MessageData, MessageDataId, MessageDataKey}, state::StateBase};
 use crate::result::Result;
 
