@@ -9,6 +9,12 @@ pub struct Node<V: StateBase + MessageBase> {
     callback: Callback<V>,
 }
 
+impl<V: StateBase + MessageBase> Default for Node<V> {
+    fn default() -> Self {
+        Self::new(&CallbackSender::None, vec![], None)
+    }
+}
+
 impl<V: StateBase + MessageBase> Node<V> {
     pub fn value(&self) -> &V { &self.value }
 }

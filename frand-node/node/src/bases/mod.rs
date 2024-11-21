@@ -1,4 +1,3 @@
-mod component;
 mod performer;
 mod processor;
 mod callback;
@@ -7,7 +6,6 @@ mod state;
 mod node;
 
 pub use self::{
-    component::*,
     performer::*,
     processor::*,
     callback::*,

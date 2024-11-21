@@ -103,6 +103,12 @@ pub fn expand(
             callback: #mp::Callback<#state_name>,
         }
 
+        impl Default for Node {
+            fn default() -> Self {
+                Self::new(&#mp::CallbackSender::None, vec![], None)
+            }
+        }
+
         impl #mp::NodeBase for Node {
             type State = #state_name;
 

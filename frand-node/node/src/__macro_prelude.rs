@@ -6,7 +6,7 @@ pub use crate::{
     prelude::*,
     result::{ComponentError, Result},
     bases::{
-        Callback, MessageData, MessageError, Performer, 
+        Callback, MessageError,
         MessageDataId, CallbackSender,
     },
 };

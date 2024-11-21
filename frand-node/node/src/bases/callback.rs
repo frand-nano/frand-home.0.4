@@ -7,6 +7,7 @@ use crate::result::Result;
 pub enum CallbackSender {
     Callback(ProcessorCallback),
     Sender(Sender<MessageData>),
+    None,
 }
 
 impl CallbackSender {
@@ -14,6 +15,7 @@ impl CallbackSender {
         Ok(match self {
             Self::Callback(callback) => (callback)(message.clone())?,
             Self::Sender(sender) => sender.send(message)?,
+            Self::None => (),
         })
     }
 }

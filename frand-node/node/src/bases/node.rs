@@ -2,8 +2,8 @@ use std::fmt::Debug;
 use super::{message::{MessageData, MessageDataId}, state::StateBase, CallbackSender};
 use crate::result::Result;
 
-pub trait NodeBase: Debug + Clone {    
-    type State: StateBase;
+pub trait NodeBase: Debug + Clone + Sized {    
+    type State: StateBase; 
 
     fn emit(&self, state: &Self::State) -> Result<()>;
 
