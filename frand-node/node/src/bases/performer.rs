@@ -30,8 +30,6 @@ impl<S: 'static + StateBase> Performer<S> {
     pub fn new<U>(update: U) -> Self 
     where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
     {
-        log::info!("Performer new");
-        
         let (callback, input) = Processor::<S, U>::new_callback(update);
         let callback = CallbackSender::Callback(callback);
 
@@ -42,11 +40,13 @@ impl<S: 'static + StateBase> Performer<S> {
         }      
     }
 
-    pub fn replace_node(&mut self, node: &S::Node) {
-        log::info!("Performer replace_node");
-
-        node.reset_sender(&self.callback);
-        self.node = node.clone();
+    pub fn new_with<U>(node: &S::Node, update: U) -> Self 
+    where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
+    {
+        let mut result = Self::new(update);
+        node.reset_sender(&result.callback);
+        result.node = node.clone();
+        result
     }
 
     pub fn apply(&mut self, message: MessageData) -> Result<()> {

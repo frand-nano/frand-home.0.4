@@ -28,8 +28,6 @@ impl<S: 'static + StateBase, U> Processor<S, U>
 where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
 {
     pub fn new(update: U) -> (Processor<S, U>, Sender<MessageData>) {
-        log::info!("Processor new");
-
         let (input, input_rx) = unbounded();
         let (node_tx, node_rx) = unbounded();
 

@@ -20,8 +20,7 @@ impl DerefMut for SimpleComponent {
 impl SimpleComponent {
     pub fn new(context: &yew::Context<Self>) -> Self {
         let callback = context.link().callback(|message: MessageData| message);
-
-        let performer = Performer::<Simple>::new(move |node, message, data| {
+        let update = move |node: &SimpleMod::Node, message, data| {
             callback.emit(data);
 
             match message {
@@ -52,10 +51,10 @@ impl SimpleComponent {
             }
             
             Ok(())
-        });
+        };
 
         Self {
-            performer,
+            performer: Performer::<Simple>::new_with(context.props(), update),
             message_count: 0,
         }        
     }
@@ -66,16 +65,10 @@ impl yew::Component for SimpleComponent {
     type Properties = SimpleMod::Node;
 
     fn create(context: &yew::Context<Self>) -> Self {
-        log::info!("create");
-        
-        let mut result = Self::new(context);
-        result.replace_node(context.props());
-        result
+        Self::new(context)
     }
 
     fn view(&self, _ctx: &yew::Context<Self>) -> Html {    
-        log::info!("view");
-
         let add1 = |node: Node<i32>| {
             (
                 *node.value(),
