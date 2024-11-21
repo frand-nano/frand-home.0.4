@@ -1,8 +1,10 @@
 
 use frand_node::*;
-use yew::{function_component, Html};
+use yew::{function_component, Html, Properties};
 
-#[frand_node::node_macro]
+#[node_macro(
+    node_attrs(#[derive(Properties)])
+)]
 pub struct Test {
     pub sub1: TestSub,
     pub sub2: TestSub,
@@ -10,7 +12,9 @@ pub struct Test {
 
 test_macro!{}
 
-#[frand_node::node_macro]
+#[node_macro(
+    node_attrs(#[derive(Properties)])
+)]
 pub struct TestSub {
     pub number1: i32,
     pub number2: i32,
@@ -19,7 +23,9 @@ pub struct TestSub {
 
 test_sub_macro!{}
 
-#[frand_node::component_macro(Test)]
+#[component_macro(
+    state(Test)
+)]
 pub struct TestComponent {
 
 }

@@ -1,12 +1,14 @@
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
-use syn::{Field, Fields, Ident, ItemStruct, Result};
+use syn::*;
 use quote::quote;
+use crate::{attrs::Attrs, node_attrs::{NodeAttrItem, NodeAttrKeyItem}};
 
 pub type MessageDataId = u32;
 
 pub fn expand(
-    state: ItemStruct,
+    attrs: &Attrs<NodeAttrKeyItem>,
+    state: &ItemStruct,
 ) -> Result<TokenStream> {
     let mp = quote!{ frand_node::__macro_prelude };
 
@@ -41,7 +43,35 @@ pub fn expand(
         quote!{ <#ty as #mp::StateBase>::Message }
     ).collect();
 
+    let state_attrs: Option<TokenStream> = attrs.find("state_attrs", |attr| {
+        if let NodeAttrItem::Attrs(attrs) = &attr.item {
+            let attrs = attrs.iter();
+            Ok(quote! { #(#attrs)* })
+        } else {
+            Err(Error::new_spanned(&attr.key, "NodeAttrItem expand error"))
+        }     
+    })?;
+
+    let node_attrs: Option<TokenStream> = attrs.find("node_attrs", |attr| {
+        if let NodeAttrItem::Attrs(attrs) = &attr.item {
+            let attrs = attrs.iter();
+            Ok(quote! { #(#attrs)* })
+        } else {
+            Err(Error::new_spanned(&attr.key, "NodeAttrItem expand error"))
+        }     
+    })?;
+
+    let message_attrs: Option<TokenStream> = attrs.find("message_attrs", |attr| {
+        if let NodeAttrItem::Attrs(attrs) = &attr.item {
+            let attrs = attrs.iter();
+            Ok(quote! { #(#attrs)* })
+        } else {
+            Err(Error::new_spanned(&attr.key, "NodeAttrItem expand error"))
+        }     
+    })?;
+
     let state = quote! {
+        #state_attrs
         #[derive(
             Debug, Clone, Default, PartialEq, 
             #mp::reexport_serde::Serialize, 
@@ -66,6 +96,7 @@ pub fn expand(
 
     let node = quote! {
         #[allow(dead_code)]
+        #node_attrs
         #[derive(Debug, Clone, PartialEq)]
         pub struct Node {
             #(pub #names: #ty_nodes,)*
@@ -114,6 +145,7 @@ pub fn expand(
     };
 
     let message = quote! {
+        #message_attrs
         #[derive(Debug, Clone)]
         pub enum Message {
             #(#[allow(non_camel_case_types)] #names(#[allow(dead_code)] #ty_messages),)*

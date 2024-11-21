@@ -1,15 +1,22 @@
+use attrs::Attrs;
+use component_attrs::ComponentAttrKeyItem;
 use convert_case::{Case, Casing};
+use node_attrs::NodeAttrKeyItem;
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, Error, Ident, ItemStruct, Type};
+use syn::*;
 
 mod node;
+mod node_attrs;
 mod component;
+mod component_attrs;
+mod attrs;
 
 #[proc_macro_attribute]
-pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let attrs = parse_macro_input!(attr as Attrs<NodeAttrKeyItem>);
     let state = parse_macro_input!(item as ItemStruct);
 
-    let node = node::expand(state)
+    let node = node::expand(&attrs, &state)
     .unwrap_or_else(Error::into_compile_error);
     
     quote::quote! { 
@@ -19,10 +26,10 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let state_ty = parse_macro_input!(attr as Type);
+    let attrs = parse_macro_input!(attr as Attrs<ComponentAttrKeyItem>);
     let state = parse_macro_input!(item as ItemStruct);
 
-    let component = component::expand(state_ty, state)
+    let component = component::expand(&attrs, &state)
     .unwrap_or_else(Error::into_compile_error);
     
     quote::quote! { 
