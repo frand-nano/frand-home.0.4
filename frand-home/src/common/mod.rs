@@ -1,2 +1,3 @@
 pub mod render;
-pub mod app;
+pub mod simple;
+pub mod simple_component;

@@ -1,9 +1,33 @@
 pub use prelude::*;
 
-#[doc(hidden)]
-pub mod __macro_prelude;
-
-pub mod prelude;
 pub mod result;
 pub mod bases;
 pub mod extends;
+
+pub mod prelude {
+    pub use frand_node_macro::*;
+
+    pub use crate::{
+        bases::{
+            Performer, MessageData,
+            StateBase, NodeBase, MessageBase, 
+        },
+        extends::Node,
+    };
+}
+
+#[doc(hidden)]
+pub mod __macro_prelude {
+    pub use std::ops::{Deref, DerefMut};
+    pub use serde::{Serialize, Deserialize};
+    pub use crossbeam::channel::{Sender, Receiver};
+
+    pub use crate::{
+        prelude::*,
+        result::{ComponentError, Result},
+        bases::{
+            Callback, MessageError,
+            MessageDataId, CallbackSender,
+        },
+    };
+}
