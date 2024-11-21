@@ -123,6 +123,11 @@ pub fn expand(
                 }
             }
 
+            fn reset_callback(&self, callback: &#mp::Sender<#mp::MessageData>) {
+                self.callback.reset_callback(callback);
+                #(self.#names.reset_callback(callback);)*
+            }
+
             #[doc(hidden)]
             fn __apply(&mut self, data: #mp::MessageData) -> #mp::Result<()> {
                 match data.next() {

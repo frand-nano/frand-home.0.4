@@ -1,6 +1,6 @@
 
 use frand_node::*;
-use yew::{function_component, Html, Properties};
+use yew::{html, Html, Properties};
 
 #[node_macro(
     node_attrs(#[derive(Properties)])
@@ -41,10 +41,62 @@ impl Component for TestComponent {
             sub1(number1(n)) => node.sub1.number2.emit(&(n + 1))?,
             sub1(number2(n)) => node.sub1.number3.emit(&(n + 1))?,
             sub1(number3(n)) => node.sub1.number1.emit(&(n + 1))?,
+
+            sub2(number1(n)) => node.sub1.number2.emit(&(n * 2))?,
+            sub2(number2(n)) => node.sub1.number3.emit(&(n * 2))?,
+
             _ => {},
         }
         
         Ok(())
+    }
+}
+
+impl yew::Component for TestComponent {
+    type Message = TestMod::Message;
+    type Properties = TestMod::Node;
+
+    fn create(ctx: &yew::Context<Self>) -> Self {
+        log::info!("create");
+        
+        let mut result = Self::new();
+        result.replace_node(ctx.props());
+        result
+    }
+
+    fn view(&self, _ctx: &yew::Context<Self>) -> Html {    
+        log::info!("view");
+
+        let onclick_sub1_number1 = {    
+            let num = self.node().sub1.number1.clone();
+            move |_| num.emit(&(num.value() + 1)).unwrap()
+        };
+
+        let onclick_sub2_number1 = {    
+            let num = self.node().sub2.number1.clone();
+            move |_| num.emit(&(num.value() + 1)).unwrap()
+        };
+
+        html! {
+            <div>
+            <button onclick = {onclick_sub1_number1}>{ "sub1.number1 +1" }</button>
+            <button onclick = {onclick_sub2_number1}>{ "sub2.number1 +1" }</button>
+                <p> {"sub1.number1 : "} { self.node().sub1.number1.value() }</p>
+                <p> {"sub1.number2 : "} { self.node().sub1.number2.value() }</p>
+                <p> {"sub1.number3 : "} { self.node().sub1.number3.value() }</p>
+                <p> {"sub2.number1 : "} { self.node().sub2.number1.value() }</p>
+                <p> {"sub2.number2 : "} { self.node().sub2.number2.value() }</p>
+                <p> {"sub2.number3 : "} { self.node().sub2.number3.value() }</p>
+            </div>
+        }
+    }
+
+    fn update(&mut self, _ctx: &yew::Context<Self>, _msg: Self::Message) -> bool {
+        log::info!("update");
+
+        let (pm, nm) = self.perform().unwrap();
+        log::info!("pm: {pm}, nm: {nm}");
+        0 < pm + nm
     }
 }
 
@@ -67,26 +119,6 @@ fn test() -> anyhow::Result<()> {
 
 #[allow(unused)]
 pub fn render() {
-    yew::Renderer::<App>::new().render();    
-}
-
-#[function_component]
-fn App() -> Html {
-    use yew::prelude::*;
-
-    let counter = use_state(|| 0);
-    let onclick = {
-        let counter = counter.clone();
-        move |_| {
-            let value = *counter + 1;
-            counter.set(value);
-        }
-    };
-
-    html! {
-        <div>
-            <button {onclick}>{ "+1" }</button>
-            <p>{ *counter }</p>
-        </div>
-    }
+    let component = TestComponent::new();
+    yew::Renderer::<TestComponent>::with_props(component.node().clone()).render();    
 }

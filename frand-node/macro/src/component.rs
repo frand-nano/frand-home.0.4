@@ -17,7 +17,7 @@ pub fn expand(
         component_name.span(),
     );
 
-    let component_attrs: Option<TokenStream> = attrs.find("component_attrs", |attr| {
+    let component_attrs: Option<TokenStream> = attrs.find("attrs", |attr| {
         if let ComponentAttrItem::Attrs(attrs) = &attr.item {
             let attrs = attrs.iter();
             Ok(quote! { #(#attrs)* })
@@ -53,10 +53,14 @@ pub fn expand(
             fn node(&self) -> &Self::Node { &self.__performer.node() }
             fn input_tx(&self) -> &#mp::Sender<#mp::MessageData> { self.__performer.input_tx() }    
             fn take_output_rx(&mut self) -> Option<#mp::Receiver<#mp::MessageData>> { self.__performer.take_output_rx() }
-            fn perform(&mut self) -> #mp::Result<()> { self.__performer.perform::<Self>() }
+            fn perform(&mut self) -> #mp::Result<(usize, usize)> { self.__performer.perform::<Self>() }
         
             fn new() -> Self {
                 Self { __performer: #mp::Performer::new() }
+            }
+
+            fn replace_node(&mut self, node: &Self::Node) {
+                self.__performer.replace_node(node);
             }
         }
     };

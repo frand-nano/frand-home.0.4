@@ -13,7 +13,8 @@ pub trait ComponentBase {
     fn take_output_rx(&mut self) -> Option<Receiver<MessageData>>;
     
     fn new() -> Self;
-    fn perform(&mut self) -> Result<()>;    
+    fn replace_node(&mut self, node: &Self::Node);
+    fn perform(&mut self) -> Result<(usize, usize)>;    
 }
 
 pub trait Component: ComponentBase {

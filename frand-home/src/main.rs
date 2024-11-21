@@ -5,6 +5,7 @@ mod backend;
 
 #[cfg(target_arch = "wasm32")]
 fn main() {
+    wasm_logger::init(wasm_logger::Config::default());
     common::render::render();
 }
 

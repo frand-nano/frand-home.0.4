@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData};
+use std::{cell::RefCell, fmt::Debug, marker::PhantomData};
 use crossbeam::channel::Sender;
 use super::{message::{MessageData, MessageDataId, MessageDataKey}, state::StateBase};
 use crate::result::Result;
@@ -6,7 +6,7 @@ use crate::result::Result;
 #[derive(Clone)]
 pub struct Callback<S: StateBase> {
     ids: MessageDataKey,
-    callback: Sender<MessageData>,    
+    callback: RefCell<Sender<MessageData>>,    
     __phantom: PhantomData<S>,  
 }
 
@@ -34,13 +34,17 @@ impl<S: StateBase> Callback<S> {
 
         Self { 
             ids: ids.into_boxed_slice(),
-            callback: callback.clone(),
+            callback: RefCell::new(callback.clone()),
             __phantom: Default::default(),
         }
     }
 
+    pub fn reset_callback(&self, callback: &Sender<MessageData>) {
+        *self.callback.borrow_mut() = callback.clone();
+    }
+
     pub fn emit(&self, state: &S) -> Result<()> {
-        Ok(self.callback.send(
+        Ok(self.callback.borrow().send(
             MessageData::serialize(&self.ids, None, state)?
         )?)
     }

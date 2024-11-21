@@ -13,6 +13,7 @@ serde = "1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 yew = { version = "0.21", features = ["csr"] }
+wasm-logger = "0.2.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dotenv = "0.15"

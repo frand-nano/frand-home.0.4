@@ -34,6 +34,10 @@ impl<V: StateBase + MessageBase> NodeBase for Node<V> {
         }
     }
 
+    fn reset_callback(&self, callback: &Sender<MessageData>) {
+        self.callback.reset_callback(callback);
+    }
+
     #[doc(hidden)]
     fn __apply(&mut self, data: MessageData) -> Result<()> {
         match data.next() {

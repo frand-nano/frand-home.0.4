@@ -14,6 +14,8 @@ pub trait NodeBase: Debug + Clone {
         id: Option<MessageDataId>,
     ) -> Self;
 
+    fn reset_callback(&self, callback: &Sender<MessageData>);
+
     #[doc(hidden)]
     fn __apply(&mut self, data: MessageData) -> Result<()>;
 
