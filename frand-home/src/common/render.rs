@@ -119,24 +119,28 @@ impl yew::Component for TestComponent {
 
         html! {
             <div>
-                <button onclick = {s1n1.1}>
-                    { format!("{} : {} + 1", stringify!(s1n1), s1n1.0) }
-                </button>
-                <button onclick = {s1n2.1}>
-                    { format!("{} : {} + 1", stringify!(s1n2), s1n2.0) }
-                </button>
-                <button onclick = {s1n3.1}>
-                    { format!("{} : {} + 1", stringify!(s1n3), s1n3.0) }
-                </button>
-                <button onclick = {s2n1.1}>
-                    { format!("{} : {} + 1", stringify!(s2n1), s2n1.0) }
-                </button>
-                <button onclick = {s2n2.1}>
-                    { format!("{} : {} + 1", stringify!(s2n2), s2n2.0) }
-                </button>
-                <button onclick = {s2n3.1}>
-                    { format!("{} : {} + 1", stringify!(s2n3), s2n3.0) }
-                </button>
+                <div>
+                    <button onclick = {s1n1.1}>
+                        { format!("{} : {} + 1", stringify!(s1n1), s1n1.0) }
+                    </button>
+                    <button onclick = {s1n2.1}>
+                        { format!("{} : {} + 1", stringify!(s1n2), s1n2.0) }
+                    </button>
+                    <button onclick = {s1n3.1}>
+                        { format!("{} : {} + 1", stringify!(s1n3), s1n3.0) }
+                    </button>
+                </div>
+                <div>
+                    <button onclick = {s2n1.1}>
+                        { format!("{} : {} + 1", stringify!(s2n1), s2n1.0) }
+                    </button>
+                    <button onclick = {s2n2.1}>
+                        { format!("{} : {} + 1", stringify!(s2n2), s2n2.0) }
+                    </button>
+                    <button onclick = {s2n3.1}>
+                        { format!("{} : {} + 1", stringify!(s2n3), s2n3.0) }
+                    </button>
+                </div>
                 <p> {"message_count : "} { self.message_count }</p>
             </div>
         }

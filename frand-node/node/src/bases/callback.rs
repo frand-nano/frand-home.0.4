@@ -22,6 +22,7 @@ impl CallbackSender {
 
 #[derive(Clone)]
 pub struct Callback<S: StateBase> {
+    depth: usize,
     ids: MessageDataKey,
     sender: RefCell<CallbackSender>,    
     __phantom: PhantomData<S>,  
@@ -50,11 +51,14 @@ impl<S: StateBase> Callback<S> {
         if let Some(id) = id { ids.push(id); }
 
         Self { 
+            depth: ids.len(),
             ids: ids.into_boxed_slice(),
             sender: RefCell::new(sender.clone()),
             __phantom: Default::default(),
         }
     }
+
+    pub fn depth(&self) -> usize { self.depth }
 
     pub fn reset_sender(&self, sender: &CallbackSender) {
         *self.sender.borrow_mut() = sender.clone();

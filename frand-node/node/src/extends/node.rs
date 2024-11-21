@@ -44,12 +44,13 @@ impl<V: StateBase + MessageBase> NodeBase for Node<V> {
     }
 
     fn apply(&mut self, data: MessageData) -> Result<()> {
-        match data.next() {
-            (Some(0), data) => Ok(self.__apply_state(data.deserialize()?)),
-            (Some(_), data) => Err(data.error(
+        let depth = self.callback.depth()-1;
+        match data.get_id(depth) {
+            Some(0) => Ok(self.__apply_state(data.deserialize()?)),
+            Some(_) => Err(data.error(depth,
                 format!("Node<V>::apply() unknown id"),
             )),
-            (None, data) => Err(data.error(
+            None => Err(data.error(depth,
                 format!("Node<V>::apply() data has no more id"),
             )),
         }     

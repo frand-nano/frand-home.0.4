@@ -19,7 +19,6 @@ pub struct MessageError {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageData {
-    depth: MessageDataDepth,
     ids: MessageDataKey,
     value: Box<[u8]>,
 }
@@ -27,7 +26,7 @@ pub struct MessageData {
 pub trait MessageBase: Debug + Clone + Sized {
     type State: StateBase;
     
-    fn deserialize(data: MessageData) -> Result<Self>;
+    fn deserialize(depth: usize, data: MessageData) -> Result<Self>;
 }
 
 impl fmt::Display for MessageError {
@@ -52,7 +51,6 @@ impl MessageData {
 
         let mut buffer = Vec::new();
         let mut result = Self { 
-            depth: 0,
             ids: ids.into_boxed_slice(), 
             value: Default::default(), 
         };
@@ -62,31 +60,26 @@ impl MessageData {
                 result.value = buffer.into_boxed_slice();
                 Ok(result)
             },
-            Err(err) => Err(result.error(err.to_string())),
+            Err(err) => Err(result.error(0, err.to_string())),
         }
     }
 
     pub fn deserialize<S: StateBase>(self) -> Result<S> {
         ciborium::from_reader(Cursor::new(&self.value))
-        .map_err(|err| self.error(err.to_string()))
+        .map_err(|err| self.error(0, err.to_string()))
     }
 
-    pub fn next(mut self) -> (Option<MessageDataId>, Self) { 
-        match self.ids.get(self.depth as usize) {
-            Some(id) => {
-                self.depth += 1;
-                (Some(*id), self)
-            },
-            None => (None, self),
-        }
+    pub fn get_id(&self, depth: usize) -> Option<MessageDataId> { 
+        self.ids.get(depth).copied()
     }
 
     pub fn error(
         self, 
+        depth: usize,
         message: impl AsRef<str>,
     ) -> ComponentError {
         MessageError { 
-            depth: self.depth, 
+            depth: depth as MessageDataDepth, 
             ids: self.ids, 
             value: self.value, 
             message: message.as_ref().to_owned(), 

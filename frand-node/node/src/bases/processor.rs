@@ -71,7 +71,7 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
     
                     self.node.apply(data.clone())?;
                     
-                    let message = S::Message::deserialize(data.clone())?;
+                    let message = S::Message::deserialize(0, data.clone())?;
                     (self.update)(&self.node, message, data)?;
                 }
             }

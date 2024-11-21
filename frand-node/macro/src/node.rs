@@ -134,14 +134,15 @@ pub fn expand(
                 #(self.#names.reset_sender(sender);)*
             }
 
-            fn apply(&mut self, data: #mp::MessageData) -> #mp::Result<()> {
-                match data.next() {
-                    #((Some(#indexes), data) => self.#names.apply(data),)*
-                    (Some(#state_id), data) => Ok(self.__apply_state(data.deserialize()?)),
-                    (Some(_), data) => Err(data.error(
+            fn apply(&mut self, data: #mp::MessageData) -> #mp::Result<()> {                
+                let depth = self.callback.depth()-1;
+                match data.get_id(depth) {
+                    #(Some(#indexes) => self.#names.apply(data),)*
+                    Some(#state_id) => Ok(self.__apply_state(data.deserialize()?)),
+                    Some(_) => Err(data.error(depth, 
                         format!("{}::apply() unknown id", stringify!(#state_name)),
                     )),
-                    (None, data) => Err(data.error(
+                    None => Err(data.error(depth, 
                         format!("{}::apply() data has no more id", stringify!(#state_name)),
                     )),
                 }     
@@ -165,14 +166,14 @@ pub fn expand(
         impl #mp::MessageBase for Message {
             type State = #state_name;
 
-            fn deserialize(data: #mp::MessageData) -> #mp::Result<Self> {
-                match data.next() {
-                    #((Some(#indexes), data) => Ok(Message::#names(#ty_messages::deserialize(data)?)),)*
-                    (Some(#state_id), data) => Ok(Self::State(data.deserialize()?)),
-                    (Some(_), data) => Err(data.error(
+            fn deserialize(depth: usize, data: #mp::MessageData) -> #mp::Result<Self> {
+                match data.get_id(depth) {
+                    #(Some(#indexes) => Ok(Message::#names(#ty_messages::deserialize(depth + 1, data)?)),)*
+                    Some(#state_id) => Ok(Self::State(data.deserialize()?)),
+                    Some(_) => Err(data.error(depth, 
                         format!("{}::Message::deserialize() unknown id", stringify!(#state_name)),
                     )),
-                    (None, data) => Err(data.error(
+                    None => Err(data.error(depth, 
                         format!("{}::Message::deserialize() data has no more id", stringify!(#state_name)),
                     )),
                 }     
