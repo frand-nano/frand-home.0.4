@@ -1,12 +1,27 @@
 use std::{cell::RefCell, fmt::Debug, marker::PhantomData};
 use crossbeam::channel::Sender;
-use super::{message::{MessageData, MessageDataId, MessageDataKey}, state::StateBase};
+use super::{message::{MessageData, MessageDataId, MessageDataKey}, state::StateBase, ProcessorCallback};
 use crate::result::Result;
+
+#[derive(Clone)]
+pub enum CallbackSender {
+    Callback(ProcessorCallback),
+    Sender(Sender<MessageData>),
+}
+
+impl CallbackSender {
+    fn send(&self, message: MessageData) -> Result<()> {
+        Ok(match self {
+            Self::Callback(callback) => (callback)(message.clone())?,
+            Self::Sender(sender) => sender.send(message)?,
+        })
+    }
+}
 
 #[derive(Clone)]
 pub struct Callback<S: StateBase> {
     ids: MessageDataKey,
-    callback: RefCell<Sender<MessageData>>,    
+    sender: RefCell<CallbackSender>,    
     __phantom: PhantomData<S>,  
 }
 
@@ -26,7 +41,7 @@ impl<S: StateBase> PartialEq for Callback<S> {
 
 impl<S: StateBase> Callback<S> {
     pub fn new(
-        callback: &Sender<MessageData>,     
+        sender: &CallbackSender,     
         mut ids: Vec<MessageDataId>,
         id: Option<MessageDataId>, 
     ) -> Self {
@@ -34,17 +49,17 @@ impl<S: StateBase> Callback<S> {
 
         Self { 
             ids: ids.into_boxed_slice(),
-            callback: RefCell::new(callback.clone()),
+            sender: RefCell::new(sender.clone()),
             __phantom: Default::default(),
         }
     }
 
-    pub fn reset_callback(&self, callback: &Sender<MessageData>) {
-        *self.callback.borrow_mut() = callback.clone();
+    pub fn reset_sender(&self, sender: &CallbackSender) {
+        *self.sender.borrow_mut() = sender.clone();
     }
 
     pub fn emit(&self, state: &S) -> Result<()> {
-        Ok(self.callback.borrow().send(
+        Ok(self.sender.borrow().send(
             MessageData::serialize(&self.ids, None, state)?
         )?)
     }

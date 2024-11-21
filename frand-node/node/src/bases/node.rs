@@ -1,6 +1,5 @@
 use std::fmt::Debug;
-use crossbeam::channel::Sender;
-use super::{message::{MessageData, MessageDataId}, state::StateBase};
+use super::{message::{MessageData, MessageDataId}, state::StateBase, CallbackSender};
 use crate::result::Result;
 
 pub trait NodeBase: Debug + Clone {    
@@ -9,15 +8,13 @@ pub trait NodeBase: Debug + Clone {
     fn emit(&self, state: &Self::State) -> Result<()>;
 
     fn new(
-        callback: &Sender<MessageData>,     
+        sender: &CallbackSender,     
         ids: Vec<MessageDataId>,
         id: Option<MessageDataId>,
     ) -> Self;
 
-    fn reset_callback(&self, callback: &Sender<MessageData>);
-
-    #[doc(hidden)]
-    fn __apply(&mut self, data: MessageData) -> Result<()>;
+    fn reset_sender(&self, sender: &CallbackSender);
+    fn apply(&mut self, data: MessageData) -> Result<()>;
 
     #[doc(hidden)]
     fn __apply_state(&mut self, state: Self::State);

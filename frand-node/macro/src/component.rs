@@ -38,29 +38,30 @@ pub fn expand(
         #component_attrs
         pub struct #component_name {   
             #[doc(hidden)]
-            __performer: #mp::Performer<#state>,
+            performer: #mp::Performer<Self>,
         }
     };
 
     let component_impl = quote!{
+        impl #mp::Deref for TestComponent {
+            type Target = #mp::Performer<Self>;
+            fn deref(&self) -> &Self::Target { &self.performer }
+        }
+
+        impl #mp::DerefMut for TestComponent {
+            fn deref_mut(&mut self) -> &mut Self::Target { &mut self.performer }
+        }
+
         impl #mp::ComponentBase for #component_name
-        where Self: #mp::Component
         {
             type State = #state;
             type Node = <#state as StateBase>::Node;
             type Message = <#state as StateBase>::Message;
         
-            fn node(&self) -> &Self::Node { &self.__performer.node() }
-            fn input_tx(&self) -> &#mp::Sender<#mp::MessageData> { self.__performer.input_tx() }    
-            fn take_output_rx(&mut self) -> Option<#mp::Receiver<#mp::MessageData>> { self.__performer.take_output_rx() }
-            fn perform(&mut self) -> #mp::Result<(usize, usize)> { self.__performer.perform::<Self>() }
-        
+            fn node(&self) -> &Self::Node { &self.performer.node() }
+            
             fn new() -> Self {
-                Self { __performer: #mp::Performer::new() }
-            }
-
-            fn replace_node(&mut self, node: &Self::Node) {
-                self.__performer.replace_node(node);
+                Self { performer: #mp::Performer::new() }
             }
         }
     };

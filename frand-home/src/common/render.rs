@@ -40,16 +40,34 @@ impl Component for TestComponent {
         match message {
             sub1(number1(n)) => node.sub1.number2.emit(&(n + 1))?,
             sub1(number2(n)) => node.sub1.number3.emit(&(n + 1))?,
-            sub1(number3(n)) => node.sub1.number1.emit(&(n + 1))?,
 
-            sub2(number1(n)) => node.sub1.number2.emit(&(n * 2))?,
-            sub2(number2(n)) => node.sub1.number3.emit(&(n * 2))?,
+            sub2(number1(n)) => node.sub2.number2.emit(&(n * 2))?,
+            sub2(number2(n)) => node.sub2.number3.emit(&(n * 2))?,
 
             _ => {},
         }
         
         Ok(())
     }
+}
+
+#[test]
+fn test() -> anyhow::Result<()> {
+    let mut component = TestComponent::new();
+
+    component.node().sub1.number1.emit(&0)?;
+    component.node().sub2.number1.emit(&4)?;
+    component.apply_output()?;
+
+    assert_eq!(*component.node().sub1.number1.value(), 0);
+    assert_eq!(*component.node().sub1.number2.value(), 1);
+    assert_eq!(*component.node().sub1.number3.value(), 2);
+
+    assert_eq!(*component.node().sub2.number1.value(), 4);
+    assert_eq!(*component.node().sub2.number2.value(), 8);
+    assert_eq!(*component.node().sub2.number3.value(), 16);
+
+    Ok(())
 }
 
 impl yew::Component for TestComponent {
@@ -90,31 +108,6 @@ impl yew::Component for TestComponent {
             </div>
         }
     }
-
-    fn update(&mut self, _ctx: &yew::Context<Self>, _msg: Self::Message) -> bool {
-        log::info!("update");
-
-        let (pm, nm) = self.perform().unwrap();
-        log::info!("pm: {pm}, nm: {nm}");
-        0 < pm + nm
-    }
-}
-
-#[test]
-fn test() -> anyhow::Result<()> {
-    let mut component = TestComponent::new();
-
-    component.node().sub1.number1.emit(&1)?;
-
-    for i in 0..10 {
-        component.perform()?;
-
-        assert!(*component.node().sub1.number1.value() == i * 3 + 1);
-        assert!(*component.node().sub1.number2.value() == i * 3 + 2);
-        assert!(*component.node().sub1.number3.value() == i * 3 + 3);
-    }    
-
-    Ok(())
 }
 
 #[allow(unused)]

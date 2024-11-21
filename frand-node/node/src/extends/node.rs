@@ -1,6 +1,5 @@
-use crossbeam::channel::Sender;
 use crate::{
-    bases::{Callback, MessageBase, MessageData, MessageDataId, NodeBase, StateBase}, 
+    bases::{Callback, CallbackSender, MessageBase, MessageData, MessageDataId, NodeBase, StateBase}, 
     result::Result,
 };
 
@@ -22,7 +21,7 @@ impl<V: StateBase + MessageBase> NodeBase for Node<V> {
     }
 
     fn new(
-        callback: &Sender<MessageData>,   
+        sender: &CallbackSender,   
         mut ids: Vec<MessageDataId>,
         id: Option<MessageDataId>,  
     ) -> Self {
@@ -30,16 +29,15 @@ impl<V: StateBase + MessageBase> NodeBase for Node<V> {
 
         Self { 
             value: V::default(), 
-            callback: Callback::new(callback, ids, Some(0)), 
+            callback: Callback::new(sender, ids, Some(0)), 
         }
     }
 
-    fn reset_callback(&self, callback: &Sender<MessageData>) {
-        self.callback.reset_callback(callback);
+    fn reset_sender(&self, sender: &CallbackSender) {
+        self.callback.reset_sender(sender);
     }
 
-    #[doc(hidden)]
-    fn __apply(&mut self, data: MessageData) -> Result<()> {
+    fn apply(&mut self, data: MessageData) -> Result<()> {
         match data.next() {
             (Some(0), data) => Ok(self.__apply_state(data.deserialize()?)),
             (Some(_), data) => Err(data.error(

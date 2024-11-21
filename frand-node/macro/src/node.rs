@@ -74,8 +74,8 @@ pub fn expand(
         #state_attrs
         #[derive(
             Debug, Clone, Default, PartialEq, 
-            #mp::reexport_serde::Serialize, 
-            #mp::reexport_serde::Deserialize,
+            #mp::Serialize, 
+            #mp::Deserialize,
         )]
         #state
     };
@@ -111,27 +111,26 @@ pub fn expand(
             }
 
             fn new(
-                callback: &#mp::Sender<#mp::MessageData>,   
+                sender: &#mp::CallbackSender,   
                 mut ids: Vec<#mp::MessageDataId>,
                 id: Option<#mp::MessageDataId>,  
             ) -> Self {
                 if let Some(id) = id { ids.push(id); }
 
                 Self { 
-                    callback: #mp::Callback::new(callback, ids.clone(), Some(#state_id)), 
-                    #(#names: #ty_nodes::new(callback, ids.clone(), Some(#indexes)),)*
+                    callback: #mp::Callback::new(sender, ids.clone(), Some(#state_id)), 
+                    #(#names: #ty_nodes::new(sender, ids.clone(), Some(#indexes)),)*
                 }
             }
 
-            fn reset_callback(&self, callback: &#mp::Sender<#mp::MessageData>) {
-                self.callback.reset_callback(callback);
-                #(self.#names.reset_callback(callback);)*
+            fn reset_sender(&self, sender: &#mp::CallbackSender) {
+                self.callback.reset_sender(sender);
+                #(self.#names.reset_sender(sender);)*
             }
 
-            #[doc(hidden)]
-            fn __apply(&mut self, data: #mp::MessageData) -> #mp::Result<()> {
+            fn apply(&mut self, data: #mp::MessageData) -> #mp::Result<()> {
                 match data.next() {
-                    #((Some(#indexes), data) => self.#names.__apply(data),)*
+                    #((Some(#indexes), data) => self.#names.apply(data),)*
                     (Some(#state_id), data) => Ok(self.__apply_state(data.deserialize()?)),
                     (Some(_), data) => Err(data.error(
                         format!("{}::apply() unknown id", stringify!(#state_name)),
