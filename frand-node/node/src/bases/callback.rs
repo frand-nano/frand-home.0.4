@@ -17,7 +17,7 @@ pub enum CallbackSender {
 impl CallbackSender {
     fn send(&self, message: MessageData) -> Result<()> {
         Ok(match self {
-            Self::Callback(callback) => (callback)(message.clone())?,
+            Self::Callback(callback) => (callback)(message)?,
             Self::Sender(sender) => sender.send(message)?,
             Self::None => (),
         })
@@ -56,13 +56,21 @@ impl<S: StateBase> Callback<S> {
 
     pub fn depth(&self) -> usize { self.depth }
 
-    pub fn reset_sender(&self, sender: &CallbackSender) {
-        *self.sender.borrow_mut() = sender.clone();
+    pub fn emit(&self, state: &S) {
+        self.sender.borrow().send(
+            MessageData::new(&self.key, None, state)
+            .unwrap_or_else(|err| panic!("Callback::emit() deserialize Err({err})"))
+        )
+        .unwrap_or_else(|err| match err {
+            crate::result::ComponentError::Send(err) => {
+                log::debug!("close sender. reason: {err}");
+                *self.sender.borrow_mut() = CallbackSender::None;
+            },
+            _ => panic!("{err}"),
+        })
     }
 
-    pub fn emit(&self, state: &S) -> Result<()> {
-        self.sender.borrow().send(
-            MessageData::new(&self.key, None, state)?
-        )
+    pub fn reset_sender(&self, sender: &CallbackSender) {
+        *self.sender.borrow_mut() = sender.clone();
     }
 }

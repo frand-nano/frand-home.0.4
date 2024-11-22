@@ -9,6 +9,7 @@ pub enum ComponentError {
     Text(String),
     Message(MessageError),
     Send(SendError<MessageData>),
+    Poison(String),
     Anyhow(anyhow::Error),
 }
 
@@ -18,6 +19,7 @@ impl fmt::Display for ComponentError {
             ComponentError::Text(err) => write!(f, "{}", err),
             ComponentError::Message(err) => write!(f, "{:#?}", err),
             ComponentError::Send(err) => write!(f, "{}", err),
+            ComponentError::Poison(err) => write!(f, "{}", err),
             ComponentError::Anyhow(err) => write!(f, "{}", err),
         }
     }

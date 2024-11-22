@@ -30,7 +30,7 @@ impl DerefMut for ProcessorCallback {
 }
 
 pub struct Processor<S: StateBase, U> 
-where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
+where U: 'static + Fn(&S::Node, S::Message, MessageData)
 {     
     node: S::Node,    
     update: U,
@@ -41,7 +41,7 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
 }
 
 impl<S: 'static + StateBase, U> Processor<S, U> 
-where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
+where U: 'static + Fn(&S::Node, S::Message, MessageData)
 {
     pub fn new(update: U) -> (Processor<S, U>, Sender<MessageData>) {
         let (input, input_rx) = unbounded();
@@ -67,32 +67,36 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
         let processor = Mutex::new(processor);
         let callback = ProcessorCallback(Arc::new(move |data| {
             input_clone.send(data)?;
+
             processor.lock()
-            .map_err(|err| ComponentError::Text(err.to_string()))?
-            .process()
+            .map_err(|err| ComponentError::Poison(err.to_string()))?
+            .process();
+
+            Ok(())
         }));
 
         (callback, input)
     }
 
-    pub fn process(&mut self) -> Result<()> {
+    pub fn process(&mut self) {
         for data in self.input.try_iter() {
-            self.node_tx.send(data)?;
+            self.node_tx.send(data)
+            .unwrap_or_else(|err| 
+                panic!("Unexpected error while sending message. self.node_tx.send(data): Err({err})")
+            );
 
             while let Ok(data) = self.node_rx.try_recv() {
                 if !self.handled_messages.contains(data.key()) {
                     self.handled_messages.insert(data.key().clone());
     
-                    self.node.apply(&data)?;
+                    self.node.apply(&data);
                     
-                    let message = S::Message::deserialize(0, data.clone())?;
-                    (self.update)(&self.node, message, data)?;
+                    let message = S::Message::deserialize(0, data.clone());
+                    (self.update)(&self.node, message, data);
                 }
             }
                 
             self.handled_messages.clear();
         }
-
-        Ok(())
     }
 }

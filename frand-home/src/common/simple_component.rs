@@ -25,32 +25,30 @@ impl SimpleComponent {
 
             match message {
                 sub1(number1(n)) => {
-                    node.sub1.number2.emit(&(n + 1))?;
+                    node.sub1.number2.emit(&(n + 1));
                 },
                 sub1(number2(n)) => {
-                    node.sub1.number3.emit(&(n + 1))?;
+                    node.sub1.number3.emit(&(n + 1));
                 },
                 sub1(number3(n)) => {
-                    node.sub1.number1.emit(&(n + 1))?;
+                    node.sub1.number1.emit(&(n + 1));
                 },
 
                 sub2(number1(n)) => {
-                    node.sub2.number2.emit(&(n * 2))?;
-                    node.sub2.number3.emit(&(n / 2))?;
+                    node.sub2.number2.emit(&(n * 2));
+                    node.sub2.number3.emit(&(n / 2));
                 },
                 sub2(number2(n)) => {
-                    node.sub2.number3.emit(&(n * 2))?;
-                    node.sub2.number1.emit(&(n / 2))?;
+                    node.sub2.number3.emit(&(n * 2));
+                    node.sub2.number1.emit(&(n / 2));
                 },
                 sub2(number3(n)) => {
-                    node.sub2.number1.emit(&(n * 2))?;
-                    node.sub2.number2.emit(&(n / 2))?;
+                    node.sub2.number1.emit(&(n * 2));
+                    node.sub2.number2.emit(&(n / 2));
                 },
 
                 _ => {},
             }
-            
-            Ok(())
         };
 
         Self {
@@ -72,7 +70,7 @@ impl yew::Component for SimpleComponent {
         let add1 = |node: Node<i32>| {
             (
                 *node.value(),
-                move |_| node.emit(&(node.value() + 1)).unwrap(), 
+                move |_| node.emit(&(node.value() + 1)), 
             )
         };
 
@@ -114,7 +112,7 @@ impl yew::Component for SimpleComponent {
     }
 
     fn update(&mut self, _ctx: &yew::Context<Self>, message: Self::Message) -> bool {
-        self.apply(&message).unwrap();
+        self.apply(&message);
         self.message_count += 1;
         true
     }

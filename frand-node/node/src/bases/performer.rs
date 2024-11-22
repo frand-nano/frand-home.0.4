@@ -1,7 +1,6 @@
 use crossbeam::channel::Sender;
 use crate::{*,
     bases::{message::MessageData, CallbackSender, Processor},
-    result::Result,
 };
 
 pub struct Performer<S: StateBase> {     
@@ -15,7 +14,7 @@ impl<S: 'static + StateBase> Performer<S> {
     pub fn input(&self) -> &Sender<MessageData> { &self.input }
 
     pub fn new<U>(update: U) -> Self 
-    where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
+    where U: 'static + Fn(&S::Node, S::Message, MessageData)
     {
         let (callback, input) = Processor::<S, U>::new_callback(update);
         let callback = CallbackSender::Callback(callback);
@@ -28,7 +27,7 @@ impl<S: 'static + StateBase> Performer<S> {
     }
 
     pub fn new_with<U>(node: &S::Node, update: U) -> Self 
-    where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
+    where U: 'static + Fn(&S::Node, S::Message, MessageData)
     {
         let mut result = Self::new(update);
         node.reset_sender(&result.callback);
@@ -36,17 +35,17 @@ impl<S: 'static + StateBase> Performer<S> {
         result
     }
 
-    pub fn apply(&mut self, message: &MessageData) -> Result<()> {
+    pub fn apply(&mut self, message: &MessageData) {
         self.node.apply(message)
     }
 
-    pub fn apply_messages<I>(&mut self, messages: I) -> Result<()> 
+    pub fn apply_messages<I>(&mut self, messages: I) 
     where 
         I: Iterator<Item = MessageData>,
         I::Item: AsRef<MessageData>,
     {
-        Ok(for message in messages {
-            self.node.apply(message.as_ref())?;
-        })
+        for message in messages {
+            self.node.apply(message.as_ref());
+        }
     }
 }

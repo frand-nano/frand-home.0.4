@@ -26,7 +26,7 @@ pub struct MessageData {
 pub trait MessageBase: Debug + Clone + Sized {
     type State: StateBase;
     
-    fn deserialize(depth: usize, data: MessageData) -> Result<Self>;
+    fn deserialize(depth: usize, data: MessageData) -> Self;
 }
 
 impl fmt::Display for MessageError {

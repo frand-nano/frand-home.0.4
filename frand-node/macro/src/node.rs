@@ -112,9 +112,7 @@ pub fn expand(
         impl #mp::NodeBase for Node {
             type State = #state_name;
 
-            fn emit(&self, state: &#state_name) -> #mp::Result<()> {
-                self.callback.emit(state)
-            }
+            fn emit(&self, state: &#state_name) { self.callback.emit(state) }
 
             fn new(
                 sender: &#mp::CallbackSender,   
@@ -134,18 +132,15 @@ pub fn expand(
                 #(self.#names.reset_sender(sender);)*
             }
 
-            fn apply(&mut self, data: &#mp::MessageData) -> #mp::Result<()> {                
+            fn apply(&mut self, data: &#mp::MessageData) {                
                 let depth = self.callback.depth()-1;
                 match data.get_id(depth) {
-                    #(Some(#indexes) => self.#names.apply(data),)*
-                    Some(#state_id) => Ok(self.apply_state(data.read_state()?)),
-                    Some(_) => Err(data.error(depth, 
-                        format!("{}::apply() unknown id", stringify!(#state_name)),
-                    )),
-                    None => Err(data.error(depth, 
-                        format!("{}::apply() data has no more id", stringify!(#state_name)),
-                    )),
+                    #(Some(#indexes) => Ok(self.#names.apply(data)),)*
+                    Some(#state_id) => data.read_state().map(|state| self.apply_state(state)),
+                    Some(_) => Err(data.error(depth, "unknown id")),
+                    None => Err(data.error(depth, "data has no more id")),
                 }     
+                .unwrap_or_else(|err| panic!("{}::apply() deserialize Err({err})", stringify!(#state_name)));
             }
 
             fn apply_state(&mut self, state: #state_name) {
@@ -165,21 +160,17 @@ pub fn expand(
         impl #mp::MessageBase for Message {
             type State = #state_name;
 
-            fn deserialize(depth: usize, data: #mp::MessageData) -> #mp::Result<Self> {
+            fn deserialize(depth: usize, data: #mp::MessageData) -> Self {
                 match data.get_id(depth) {
-                    #(Some(#indexes) => Ok(Message::#names(#ty_messages::deserialize(depth + 1, data)?)),)*
-                    Some(#state_id) => Ok(Self::State(data.read_state()?)),
-                    Some(_) => Err(data.error(depth, 
-                        format!("{}::Message::deserialize() unknown id", stringify!(#state_name)),
-                    )),
-                    None => Err(data.error(depth, 
-                        format!("{}::Message::deserialize() data has no more id", stringify!(#state_name)),
-                    )),
+                    #(Some(#indexes) => Ok(Message::#names(#ty_messages::deserialize(depth + 1, data))),)*
+                    Some(#state_id) => data.read_state().map(|state| Self::State(state)),
+                    Some(_) => Err(data.error(depth, "unknown id")),
+                    None => Err(data.error(depth, "data has no more id")),
                 }     
+                .unwrap_or_else(|err| panic!("{}::deserialize() Err({err})", stringify!(#state_name)))
             }
         }
     };
-
     
     Ok(quote!{
         #state

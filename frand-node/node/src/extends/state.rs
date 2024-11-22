@@ -22,16 +22,13 @@ macro_rules! impl_state_for {
                 fn deserialize(
                     depth: usize,
                     data: frand_node::macro_prelude::MessageData,
-                ) -> frand_node::macro_prelude::Result<Self> {
+                ) -> Self {
                     match data.get_id(depth) {
-                        Some(0) => Ok(data.read_state()?),
-                        Some(_) => Err(data.error(depth,
-                            format!("S::read_state() unknown id"),
-                        )),
-                        None => Err(data.error(depth,
-                            format!("S::read_state() data has no more id"),
-                        )),
+                        Some(0) => data.read_state(),
+                        Some(_) => Err(data.error(depth, "unknown id")),
+                        None => Err(data.error(depth, "data has no more id")),
                     }     
+                    .unwrap_or_else(|err| panic!("{}::deserialize() Err({err})", stringify!($tys)))
                 }
             }
         )*      

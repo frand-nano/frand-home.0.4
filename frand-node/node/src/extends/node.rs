@@ -1,7 +1,4 @@
-use crate::{
-    bases::{Callback, CallbackSender, MessageBase, MessageData, MessageDataId, NodeBase, StateBase}, 
-    result::Result,
-};
+use crate::bases::{Callback, CallbackSender, MessageBase, MessageData, MessageDataId, NodeBase, StateBase};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node<V: StateBase + MessageBase> {
@@ -22,9 +19,7 @@ impl<V: StateBase + MessageBase> Node<V> {
 impl<V: StateBase + MessageBase> NodeBase for Node<V> {    
     type State = V;
 
-    fn emit(&self, state: &V) -> Result<()> {
-        self.callback.emit(state)
-    }
+    fn emit(&self, state: &V) { self.callback.emit(state) }
 
     fn new(
         sender: &CallbackSender,   
@@ -39,21 +34,18 @@ impl<V: StateBase + MessageBase> NodeBase for Node<V> {
         }
     }
 
-    fn reset_sender(&self, sender: &CallbackSender) {
-        self.callback.reset_sender(sender);
+    fn reset_sender(&self, sender: &CallbackSender) { 
+        self.callback.reset_sender(sender); 
     }
 
-    fn apply(&mut self, data: &MessageData) -> Result<()> {
+    fn apply(&mut self, data: &MessageData) {
         let depth = self.callback.depth()-1;
         match data.get_id(depth) {
-            Some(0) => Ok(self.apply_state(data.read_state()?)),
-            Some(_) => Err(data.error(depth,
-                format!("Node<V>::apply() unknown id"),
-            )),
-            None => Err(data.error(depth,
-                format!("Node<V>::apply() data has no more id"),
-            )),
-        }     
+            Some(0) => data.read_state().map(|state| self.apply_state(state)),
+            Some(_) => Err(data.error(depth, "unknown id")),
+            None => Err(data.error(depth, "data has no more id")),
+        }
+        .unwrap_or_else(|err| panic!("Node<V>::apply() deserialize Err({err})"));
     }
 
     fn apply_state(&mut self, state: V) {
