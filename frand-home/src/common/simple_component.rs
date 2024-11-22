@@ -1,10 +1,11 @@
 use std::ops::{Deref, DerefMut};
 use frand_node::*;
 use yew::{html, Html};
-use super::simple::{Simple, SimpleMessage::*, SimpleMod, SimpleSubMessage::*};
+use super::{client_socket::{ClientSocket, SocketMessage}, simple::{Simple, SimpleMessage::*, SimpleMod, SimpleSubMessage::*}};
 
 pub struct SimpleComponent {
     performer: Performer<Simple>,
+    socket: ClientSocket<Self>,
     message_count: usize,
 }
 
@@ -19,7 +20,10 @@ impl DerefMut for SimpleComponent {
 
 impl SimpleComponent {
     pub fn new(context: &yew::Context<Self>) -> Self {
-        let callback = context.link().callback(|message: MessageData| message);
+        let callback = context.link().callback(
+            |message: MessageData| SocketMessage::Receive(message)
+        );
+
         let update = move |node: &SimpleMod::Node, message, data| {
             callback.emit(data);
 
@@ -53,13 +57,14 @@ impl SimpleComponent {
 
         Self {
             performer: Performer::<Simple>::new_with(context.props(), update),
+            socket: ClientSocket::new(context),
             message_count: 0,
         }        
     }
 }
 
 impl yew::Component for SimpleComponent {
-    type Message = MessageData;
+    type Message = SocketMessage<MessageData>;
     type Properties = SimpleMod::Node;
 
     fn create(context: &yew::Context<Self>) -> Self {
@@ -112,7 +117,15 @@ impl yew::Component for SimpleComponent {
     }
 
     fn update(&mut self, _ctx: &yew::Context<Self>, message: Self::Message) -> bool {
-        self.apply(&message);
+        match message {
+            SocketMessage::Send(message) => {
+                self.socket.send(message);
+            },
+            SocketMessage::Receive(message) => {
+                self.apply(&message);
+            },
+        }
+        
         self.message_count += 1;
         true
     }

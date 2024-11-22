@@ -87,32 +87,39 @@ impl MessageData {
     }
 }
 
-impl TryFrom<&MessageData> for Vec<u8> {    
+impl TryFrom<MessageData> for Vec<u8> {    
     type Error = NodeError;
 
-    fn try_from(value: &MessageData) -> Result<Self> {        
+    fn try_from(value: MessageData) -> Result<Self> {        
         let mut buffer = Vec::new();
 
-        match ciborium::into_writer(value, &mut buffer) {
+        match ciborium::into_writer(&value, &mut buffer) {
             Ok(()) => Ok(buffer),
             Err(err) => Err(value.error(0, err.to_string())),
         }
     }
 }
 
-impl TryFrom<&Vec<u8>> for MessageData {    
+impl TryFrom<Vec<u8>> for MessageData {    
     type Error = NodeError;
 
-    fn try_from(value: &Vec<u8>) -> Result<Self> {      
+    fn try_from(value: Vec<u8>) -> Result<Self> {      
         ciborium::from_reader(Cursor::new(value))
         .map_err(|err| NodeError::Text(err.to_string()))
     }
 }
 
-impl TryFrom<&MessageData> for String {    
+impl From<anyhow::Result<Vec<u8>>> for MessageData {    
+    fn from(value: anyhow::Result<Vec<u8>>) -> Self {      
+        value.unwrap().try_into().unwrap()
+    }
+}
+
+impl TryFrom<MessageData> for String 
+{    
     type Error = NodeError;
 
-    fn try_from(value: &MessageData) -> Result<Self> {       
+    fn try_from(value: MessageData) -> Result<Self> {       
         Ok(String::from_utf8(value.try_into()?)?)
     }
 }
@@ -121,6 +128,12 @@ impl TryFrom<String> for MessageData {
     type Error = NodeError;
 
     fn try_from(value: String) -> Result<Self> {      
-        (&value.into_bytes()).try_into()
+        value.into_bytes().try_into()
+    }
+}
+
+impl From<anyhow::Result<String>> for MessageData {   
+    fn from(value: anyhow::Result<String>) -> Self {      
+        value.unwrap().try_into().unwrap()
     }
 }
