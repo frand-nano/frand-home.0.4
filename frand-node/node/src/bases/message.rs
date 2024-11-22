@@ -12,14 +12,14 @@ pub type MessageDataDepth = u32;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageError {
     pub depth: MessageDataDepth,
-    pub ids: MessageDataKey,
+    pub key: MessageDataKey,
     pub value: Box<[u8]>,
     pub message: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageData {
-    ids: MessageDataKey,
+    key: MessageDataKey,
     value: Box<[u8]>,
 }
 
@@ -38,20 +38,20 @@ impl fmt::Display for MessageError {
 impl Error for MessageError {}
 
 impl MessageData {
-    pub fn ids(&self) -> &MessageDataKey { &self.ids }
+    pub fn key(&self) -> &MessageDataKey { &self.key }
 
-    pub fn serialize<S: StateBase>(
-        ids: &MessageDataKey, 
+    pub fn new<S: StateBase>(
+        key: &MessageDataKey, 
         id: Option<MessageDataId>, 
         value: &S,
     ) -> Result<Self> {
-        let mut ids = ids.to_vec();
+        let mut key = key.to_vec();
 
-        if let Some(id) = id { ids.push(id); }
+        if let Some(id) = id { key.push(id); }
 
         let mut buffer = Vec::new();
         let mut result = Self { 
-            ids: ids.into_boxed_slice(), 
+            key: key.into_boxed_slice(), 
             value: Default::default(), 
         };
 
@@ -64,24 +64,24 @@ impl MessageData {
         }
     }
 
-    pub fn deserialize<S: StateBase>(self) -> Result<S> {
+    pub fn read_state<S: StateBase>(&self) -> Result<S> {
         ciborium::from_reader(Cursor::new(&self.value))
         .map_err(|err| self.error(0, err.to_string()))
     }
 
     pub fn get_id(&self, depth: usize) -> Option<MessageDataId> { 
-        self.ids.get(depth).copied()
+        self.key.get(depth).copied()
     }
 
     pub fn error(
-        self, 
+        &self, 
         depth: usize,
         message: impl AsRef<str>,
     ) -> ComponentError {
         MessageError { 
             depth: depth as MessageDataDepth, 
-            ids: self.ids, 
-            value: self.value, 
+            key: self.key.clone(), 
+            value: self.value.clone(), 
             message: message.as_ref().to_owned(), 
         }.into()
     }

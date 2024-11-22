@@ -1,21 +1,8 @@
 use crossbeam::channel::Sender;
-
-use crate::{
-    bases::{
-        message::MessageData, 
-        node::NodeBase, CallbackSender, Processor, 
-    },
+use crate::{*,
+    bases::{message::MessageData, CallbackSender, Processor},
     result::Result,
 };
-
-use super::{MessageBase, StateBase};
-
-pub trait Update: 'static {
-    type Node: NodeBase;
-    type Message: MessageBase;
-
-    fn update(node: &Self::Node, message: Self::Message) -> anyhow::Result<()>;
-}
 
 pub struct Performer<S: StateBase> {     
     node: S::Node,     
@@ -49,15 +36,17 @@ impl<S: 'static + StateBase> Performer<S> {
         result
     }
 
-    pub fn apply(&mut self, message: MessageData) -> Result<()> {
-        Ok(self.node.apply(message)?)
+    pub fn apply(&mut self, message: &MessageData) -> Result<()> {
+        self.node.apply(message)
     }
 
     pub fn apply_messages<I>(&mut self, messages: I) -> Result<()> 
-    where I: Iterator<Item = MessageData>
+    where 
+        I: Iterator<Item = MessageData>,
+        I::Item: AsRef<MessageData>,
     {
         Ok(for message in messages {
-            self.node.apply(message)?;
+            self.node.apply(message.as_ref())?;
         })
     }
 }

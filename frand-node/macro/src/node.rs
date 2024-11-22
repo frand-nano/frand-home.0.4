@@ -10,7 +10,7 @@ pub fn expand(
     attrs: &Attrs<NodeAttrKeyItem>,
     state: &ItemStruct,
 ) -> Result<TokenStream> {
-    let mp = quote!{ frand_node::__macro_prelude };
+    let mp = quote!{ frand_node::macro_prelude };
 
     let state_name = &state.ident;
 
@@ -118,14 +118,14 @@ pub fn expand(
 
             fn new(
                 sender: &#mp::CallbackSender,   
-                mut ids: Vec<#mp::MessageDataId>,
+                mut key: Vec<#mp::MessageDataId>,
                 id: Option<#mp::MessageDataId>,  
             ) -> Self {
-                if let Some(id) = id { ids.push(id); }
+                if let Some(id) = id { key.push(id); }
 
                 Self { 
-                    callback: #mp::Callback::new(sender, ids.clone(), Some(#state_id)), 
-                    #(#names: #ty_nodes::new(sender, ids.clone(), Some(#indexes)),)*
+                    callback: #mp::Callback::new(sender, key.clone(), Some(#state_id)), 
+                    #(#names: #ty_nodes::new(sender, key.clone(), Some(#indexes)),)*
                 }
             }
 
@@ -134,11 +134,11 @@ pub fn expand(
                 #(self.#names.reset_sender(sender);)*
             }
 
-            fn apply(&mut self, data: #mp::MessageData) -> #mp::Result<()> {                
+            fn apply(&mut self, data: &#mp::MessageData) -> #mp::Result<()> {                
                 let depth = self.callback.depth()-1;
                 match data.get_id(depth) {
                     #(Some(#indexes) => self.#names.apply(data),)*
-                    Some(#state_id) => Ok(self.__apply_state(data.deserialize()?)),
+                    Some(#state_id) => Ok(self.apply_state(data.read_state()?)),
                     Some(_) => Err(data.error(depth, 
                         format!("{}::apply() unknown id", stringify!(#state_name)),
                     )),
@@ -148,9 +148,8 @@ pub fn expand(
                 }     
             }
 
-            #[doc(hidden)]
-            fn __apply_state(&mut self, state: #state_name) {
-                #(self.#names.__apply_state(state.#names);)*
+            fn apply_state(&mut self, state: #state_name) {
+                #(self.#names.apply_state(state.#names);)*
             }
         }
     };
@@ -169,7 +168,7 @@ pub fn expand(
             fn deserialize(depth: usize, data: #mp::MessageData) -> #mp::Result<Self> {
                 match data.get_id(depth) {
                     #(Some(#indexes) => Ok(Message::#names(#ty_messages::deserialize(depth + 1, data)?)),)*
-                    Some(#state_id) => Ok(Self::State(data.deserialize()?)),
+                    Some(#state_id) => Ok(Self::State(data.read_state()?)),
                     Some(_) => Err(data.error(depth, 
                         format!("{}::Message::deserialize() unknown id", stringify!(#state_name)),
                     )),

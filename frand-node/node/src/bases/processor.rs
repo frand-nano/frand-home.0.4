@@ -1,4 +1,4 @@
-use std::{collections::HashSet, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fmt::Debug, ops::{Deref, DerefMut}, sync::{Arc, Mutex}};
 use crossbeam::channel::{unbounded, Receiver, Sender};
 
 use crate::{
@@ -11,7 +11,23 @@ use crate::{
 
 use super::StateBase;
 
-pub type ProcessorCallback = Arc<dyn Fn(MessageData) -> Result<()>>;
+#[derive(Clone)]
+pub struct ProcessorCallback(Arc<dyn Fn(MessageData) -> Result<()>>);
+
+impl Debug for ProcessorCallback {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ProcessorCallback(Arc<dyn Fn(MessageData) -> Result<()>>)")
+    }
+}
+
+impl Deref for ProcessorCallback {
+    type Target = Arc<dyn Fn(MessageData) -> Result<()>>;
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl DerefMut for ProcessorCallback {
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+}
 
 pub struct Processor<S: StateBase, U> 
 where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
@@ -49,12 +65,12 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
 
         let input_clone = input.clone();
         let processor = Mutex::new(processor);
-        let callback = Arc::new(move |data| {
+        let callback = ProcessorCallback(Arc::new(move |data| {
             input_clone.send(data)?;
             processor.lock()
             .map_err(|err| ComponentError::Text(err.to_string()))?
             .process()
-        });
+        }));
 
         (callback, input)
     }
@@ -64,10 +80,10 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData) -> anyhow::Result<()>
             self.node_tx.send(data)?;
 
             while let Ok(data) = self.node_rx.try_recv() {
-                if !self.handled_messages.contains(data.ids()) {
-                    self.handled_messages.insert(data.ids().clone());
+                if !self.handled_messages.contains(data.key()) {
+                    self.handled_messages.insert(data.key().clone());
     
-                    self.node.apply(data.clone())?;
+                    self.node.apply(&data)?;
                     
                     let message = S::Message::deserialize(0, data.clone())?;
                     (self.update)(&self.node, message, data)?;

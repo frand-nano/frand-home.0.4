@@ -114,7 +114,7 @@ impl yew::Component for SimpleComponent {
     }
 
     fn update(&mut self, _ctx: &yew::Context<Self>, message: Self::Message) -> bool {
-        self.apply(message).unwrap();
+        self.apply(&message).unwrap();
         self.message_count += 1;
         true
     }

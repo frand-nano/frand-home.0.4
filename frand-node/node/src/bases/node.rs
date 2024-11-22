@@ -9,13 +9,11 @@ pub trait NodeBase: Debug + Clone + Sized {
 
     fn new(
         sender: &CallbackSender,     
-        ids: Vec<MessageDataId>,
+        key: Vec<MessageDataId>,
         id: Option<MessageDataId>,
     ) -> Self;
 
     fn reset_sender(&self, sender: &CallbackSender);
-    fn apply(&mut self, data: MessageData) -> Result<()>;
-
-    #[doc(hidden)]
-    fn __apply_state(&mut self, state: Self::State);
+    fn apply(&mut self, data: &MessageData) -> Result<()>;
+    fn apply_state(&mut self, state: Self::State);
 }

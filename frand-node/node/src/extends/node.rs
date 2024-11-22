@@ -28,14 +28,14 @@ impl<V: StateBase + MessageBase> NodeBase for Node<V> {
 
     fn new(
         sender: &CallbackSender,   
-        mut ids: Vec<MessageDataId>,
+        mut key: Vec<MessageDataId>,
         id: Option<MessageDataId>,  
     ) -> Self {
-        if let Some(id) = id { ids.push(id); }
+        if let Some(id) = id { key.push(id); }
 
         Self { 
             value: V::default(), 
-            callback: Callback::new(sender, ids, Some(0)), 
+            callback: Callback::new(sender, key, Some(0)), 
         }
     }
 
@@ -43,10 +43,10 @@ impl<V: StateBase + MessageBase> NodeBase for Node<V> {
         self.callback.reset_sender(sender);
     }
 
-    fn apply(&mut self, data: MessageData) -> Result<()> {
+    fn apply(&mut self, data: &MessageData) -> Result<()> {
         let depth = self.callback.depth()-1;
         match data.get_id(depth) {
-            Some(0) => Ok(self.__apply_state(data.deserialize()?)),
+            Some(0) => Ok(self.apply_state(data.read_state()?)),
             Some(_) => Err(data.error(depth,
                 format!("Node<V>::apply() unknown id"),
             )),
@@ -56,8 +56,7 @@ impl<V: StateBase + MessageBase> NodeBase for Node<V> {
         }     
     }
 
-    #[doc(hidden)]
-    fn __apply_state(&mut self, state: V) {
+    fn apply_state(&mut self, state: V) {
         self.value = state;
     }
 }

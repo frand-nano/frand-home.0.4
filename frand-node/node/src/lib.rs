@@ -16,8 +16,7 @@ pub mod prelude {
     };
 }
 
-#[doc(hidden)]
-pub mod __macro_prelude {
+pub mod macro_prelude {
     pub use std::ops::{Deref, DerefMut};
     pub use serde::{Serialize, Deserialize};
     pub use crossbeam::channel::{Sender, Receiver};

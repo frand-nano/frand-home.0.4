@@ -1,6 +1,6 @@
 mod frand_node {
-    pub mod __macro_prelude {
-        pub use crate::__macro_prelude::*;
+    pub mod macro_prelude {
+        pub use crate::macro_prelude::*;
     }
 }
 
@@ -11,25 +11,25 @@ macro_rules! impl_state_for {
     };
     ( @inner($($tys: ty,)*) ) => {    
         $(
-            impl frand_node::__macro_prelude::StateBase for $tys {
-                type Node = frand_node::__macro_prelude::Node<Self>;
+            impl frand_node::macro_prelude::StateBase for $tys {
+                type Node = frand_node::macro_prelude::Node<Self>;
                 type Message = Self;
             }
 
-            impl frand_node::__macro_prelude::MessageBase for $tys {
+            impl frand_node::macro_prelude::MessageBase for $tys {
                 type State = Self;
 
                 fn deserialize(
                     depth: usize,
-                    data: frand_node::__macro_prelude::MessageData,
-                ) -> frand_node::__macro_prelude::Result<Self> {
+                    data: frand_node::macro_prelude::MessageData,
+                ) -> frand_node::macro_prelude::Result<Self> {
                     match data.get_id(depth) {
-                        Some(0) => Ok(data.deserialize()?),
+                        Some(0) => Ok(data.read_state()?),
                         Some(_) => Err(data.error(depth,
-                            format!("S::deserialize() unknown id"),
+                            format!("S::read_state() unknown id"),
                         )),
                         None => Err(data.error(depth,
-                            format!("S::deserialize() data has no more id"),
+                            format!("S::read_state() data has no more id"),
                         )),
                     }     
                 }

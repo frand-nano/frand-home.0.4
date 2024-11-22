@@ -23,9 +23,7 @@ impl<I: AttrsItem> Parse for Attrs<I> {
             map.insert(key_item.key().to_string(), key_item);
         }
 
-        Ok(Self {
-            map,
-        })
+        Ok(Self { map })
     }
 } 
 

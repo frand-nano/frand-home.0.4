@@ -1,9 +1,13 @@
 use std::{cell::RefCell, fmt::Debug, marker::PhantomData};
 use crossbeam::channel::Sender;
-use super::{message::{MessageData, MessageDataId, MessageDataKey}, state::StateBase, ProcessorCallback};
+use super::{
+    message::{MessageData, MessageDataId, MessageDataKey}, 
+    state::StateBase, 
+    ProcessorCallback, 
+};
 use crate::result::Result;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum CallbackSender {
     Callback(ProcessorCallback),
     Sender(Sender<MessageData>),
@@ -20,41 +24,33 @@ impl CallbackSender {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Callback<S: StateBase> {
     depth: usize,
-    ids: MessageDataKey,
+    key: MessageDataKey,
     sender: RefCell<CallbackSender>,    
-    __phantom: PhantomData<S>,  
-}
-
-impl<S: StateBase> Debug for Callback<S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Callback")
-        .field("ids", &self.ids)
-        .finish()
-    }
+    _phantom: PhantomData<S>,  
 }
 
 impl<S: StateBase> PartialEq for Callback<S> {
     fn eq(&self, other: &Self) -> bool {
-        self.ids == other.ids
+        self.key == other.key
     }
 }
 
 impl<S: StateBase> Callback<S> {
     pub fn new(
         sender: &CallbackSender,     
-        mut ids: Vec<MessageDataId>,
+        mut key: Vec<MessageDataId>,
         id: Option<MessageDataId>, 
     ) -> Self {
-        if let Some(id) = id { ids.push(id); }
+        if let Some(id) = id { key.push(id); }
 
         Self { 
-            depth: ids.len(),
-            ids: ids.into_boxed_slice(),
+            depth: key.len(),
+            key: key.into_boxed_slice(),
             sender: RefCell::new(sender.clone()),
-            __phantom: Default::default(),
+            _phantom: Default::default(),
         }
     }
 
@@ -65,8 +61,8 @@ impl<S: StateBase> Callback<S> {
     }
 
     pub fn emit(&self, state: &S) -> Result<()> {
-        Ok(self.sender.borrow().send(
-            MessageData::serialize(&self.ids, None, state)?
-        )?)
+        self.sender.borrow().send(
+            MessageData::new(&self.key, None, state)?
+        )
     }
 }
