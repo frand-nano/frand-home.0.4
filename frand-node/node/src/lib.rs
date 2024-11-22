@@ -23,7 +23,7 @@ pub mod macro_prelude {
 
     pub use crate::{
         prelude::*,
-        result::{ComponentError, Result},
+        result::{NodeError, Result},
         bases::{
             Callback, MessageError,
             MessageDataId, CallbackSender,

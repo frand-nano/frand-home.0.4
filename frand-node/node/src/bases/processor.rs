@@ -6,7 +6,7 @@ use crate::{
         message::{MessageBase, MessageData, MessageDataKey}, 
         node::NodeBase, CallbackSender, 
     }, 
-    result::{ComponentError, Result},
+    result::{NodeError, Result},
 };
 
 use super::StateBase;
@@ -69,7 +69,7 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData)
             input_clone.send(data)?;
 
             processor.lock()
-            .map_err(|err| ComponentError::Poison(err.to_string()))?
+            .map_err(|err| NodeError::Poison(err.to_string()))?
             .process();
 
             Ok(())

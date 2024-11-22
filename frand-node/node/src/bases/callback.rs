@@ -62,7 +62,7 @@ impl<S: StateBase> Callback<S> {
             .unwrap_or_else(|err| panic!("Callback::emit() deserialize Err({err})"))
         )
         .unwrap_or_else(|err| match err {
-            crate::result::ComponentError::Send(err) => {
+            crate::result::NodeError::Send(err) => {
                 log::debug!("close sender. reason: {err}");
                 *self.sender.borrow_mut() = CallbackSender::None;
             },
