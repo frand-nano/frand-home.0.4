@@ -33,7 +33,6 @@ impl CallbackSender {
 pub trait Emitter<S: StateBase> {
     fn depth(&self) -> usize;
     fn emit(&self, state: &S);
-    fn reset_sender(&self, sender: &CallbackSender);
 }
 
 #[derive(Clone, Debug)]
@@ -66,10 +65,6 @@ impl<S: StateBase> Emitter<S> for Callback<S> {
             _ => panic!("{err}"),
         })
     }
-
-    fn reset_sender(&self, sender: &CallbackSender) {
-        *self.sender.borrow_mut() = sender.clone();
-    }
 }
 
 impl<S: StateBase> Callback<S> {
@@ -86,5 +81,9 @@ impl<S: StateBase> Callback<S> {
             sender: RefCell::new(sender.clone()),
             _phantom: Default::default(),
         }
+    }
+
+    pub fn reset_sender(&self, sender: &CallbackSender) {
+        *self.sender.borrow_mut() = sender.clone();
     }
 }

@@ -1,64 +1,35 @@
 use std::ops::{Deref, DerefMut};
 use frand_node::*;
 use yew::{html, Html};
-use super::{client_socket::{ClientSocket, SocketMessage}, simple::{Simple, SimpleMessage::*, SimpleMod, SimpleSubMessage::*}};
+use super::{client_socket::{ClientSocket, SocketMessage}, simple::{Simple, SimpleMod}};
 
 pub struct SimpleComponent {
-    performer: Performer<Simple>,
+    container: Container<Simple>,
     socket: ClientSocket,
-    message_count: usize,
 }
 
 impl Deref for SimpleComponent {
-    type Target = Performer<Simple>;
-    fn deref(&self) -> &Self::Target { &self.performer }
+    type Target = Container<Simple>;
+    fn deref(&self) -> &Self::Target { &self.container }
 }
 
 impl DerefMut for SimpleComponent {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.performer }
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.container }
 }
 
 impl SimpleComponent {
     pub fn new(context: &yew::Context<Self>) -> Self {
         let callback = context.link().callback(
-            |message: MessageData| SocketMessage::FromServer(message)
+            |message: MessageData| SocketMessage::ToServer(message)
         );
 
-        let update = move |node: &SimpleMod::Node, message, data| {
+        let update = move |data| {
             callback.emit(data);
-
-            match message {
-                sub1(number1(n)) => {
-                    node.sub1.number2.emit(&(n + 1));
-                },
-                sub1(number2(n)) => {
-                    node.sub1.number3.emit(&(n + 1));
-                },
-                sub1(number3(n)) => {
-                    node.sub1.number1.emit(&(n + 1));
-                },
-
-                sub2(number1(n)) => {
-                    node.sub2.number2.emit(&(n * 2));
-                    node.sub2.number3.emit(&(n / 2));
-                },
-                sub2(number2(n)) => {
-                    node.sub2.number3.emit(&(n * 2));
-                    node.sub2.number1.emit(&(n / 2));
-                },
-                sub2(number3(n)) => {
-                    node.sub2.number1.emit(&(n * 2));
-                    node.sub2.number2.emit(&(n / 2));
-                },
-
-                _ => {},
-            }
         };
 
         Self {
-            performer: Performer::<Simple>::new_with(context.props(), update),
+            container: Container::<Simple>::new_with(context.props(), update),
             socket: ClientSocket::new(context),
-            message_count: 0,
         }        
     }
 }
@@ -87,6 +58,8 @@ impl yew::Component for SimpleComponent {
         let s2n2 = (add1)(self.sub2.number2.clone());
         let s2n3 = (add1)(self.sub2.number3.clone());
 
+        let message_count = self.message_count.value();
+
         html! {
             <div>
                 <div>
@@ -111,7 +84,7 @@ impl yew::Component for SimpleComponent {
                         { format!("s2n3 : {} + 1", s2n3.0) }
                     </button>
                 </div>
-                <p> {"message_count : "} { self.message_count }</p>
+                <p> {"message_count: "} {message_count} </p>
             </div>
         }
     }
@@ -125,8 +98,6 @@ impl yew::Component for SimpleComponent {
                 self.apply(&message);
             },
         }
-        
-        self.message_count += 1;
         true
     }
 }

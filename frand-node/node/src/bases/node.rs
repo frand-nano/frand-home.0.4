@@ -7,6 +7,8 @@ pub trait NodeBase<S: StateBase>: Debug + Clone + Sized + Deref<Target = Callbac
         key: Vec<MessageDataId>,
         id: Option<MessageDataId>,
     ) -> Self;
+
+    fn reset_sender(&self, sender: &CallbackSender);
 }
 
 pub trait Stater<S: StateBase> {

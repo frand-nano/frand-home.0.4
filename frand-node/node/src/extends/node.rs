@@ -36,6 +36,10 @@ impl<V: StateBase + MessageBase> NodeBase<V> for Node<V> {
             callback: Callback::new(sender, key, Some(0)), 
         }
     }
+
+    fn reset_sender(&self, sender: &CallbackSender) { 
+        self.callback.reset_sender(sender); 
+    }
 }
 
 impl<V: StateBase + MessageBase> Stater<V> for Node<V> {    

@@ -127,6 +127,11 @@ pub fn expand(
                     #(#names: #ty_nodes::new(sender, key.clone(), Some(#indexes)),)*
                 }
             }
+            
+            fn reset_sender(&self, sender: &#mp::CallbackSender) {
+                self.callback.reset_sender(sender);
+                #(self.#names.reset_sender(sender);)*
+            }
         }
 
         impl Stater<#state_name> for Node {    

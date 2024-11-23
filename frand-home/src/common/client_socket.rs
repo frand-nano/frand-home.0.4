@@ -27,7 +27,7 @@ impl ClientSocket {
     where <C as Component>::Message: From<SocketMessage> 
     {
         let callback = context.link().callback(
-            |message| SocketMessage::ToServer(message)
+            |message| SocketMessage::FromServer(message)
         );
 
         let notification = context.link().batch_callback(

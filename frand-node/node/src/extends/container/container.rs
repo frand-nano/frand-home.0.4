@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use bases::{CallbackSender, Emitter};
+use bases::CallbackSender;
 use crate::*;
 
 pub struct Container<S: StateBase> {     

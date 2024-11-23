@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 use crossbeam::channel::Sender;
-use bases::{CallbackSender, Emitter};
+use bases::CallbackSender;
 use crate::*;
 use super::Processor;
 

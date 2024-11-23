@@ -6,6 +6,7 @@ use frand_node::*;
 pub struct Simple {
     pub sub1: SimpleSub,
     pub sub2: SimpleSub,
+    pub message_count: u32,
 }
 
 simple_macro!{}

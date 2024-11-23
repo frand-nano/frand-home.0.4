@@ -63,7 +63,7 @@ pub async fn get_res(
     }
 }
 
-#[get("/ws/")]
+#[get("/ws")]
 pub async fn get_ws(
     request: HttpRequest, 
     stream: Payload,

@@ -9,12 +9,12 @@ use uuid::Uuid;
 
 pub struct ServerSocket {
     new_socket_rx: UnboundedReceiver<ServerSocketConnection>,
-    socket_rx: UnboundedReceiver<ServerSocketMessage>,     
+    socket_rx: UnboundedReceiver<ServerSocketMessage>,      
     connections: HashMap<Uuid, ServerSocketConnection>,
 }
 
 impl ServerSocket {
-    pub fn new_start(
+    pub fn new(
         new_socket_rx: UnboundedReceiver<ServerSocketConnection>,
         socket_rx: UnboundedReceiver<ServerSocketMessage>,     
     ) -> Self {
@@ -25,35 +25,22 @@ impl ServerSocket {
         }
     }
 
-    pub fn send(&self, id: &Uuid, message: MessageData) -> Result<(), SendError<MessageData>> {
-        self.connections[id].send(message)
+    pub fn broadcast(&self, message: MessageData) -> Result<(), SendError<MessageData>> {
+        Ok(for connection in self.connections.values() {
+            connection.send(message.clone())?;
+        })
     }
 
-    pub async fn recv(&mut self) -> ServerSocketMessage {
-        let result;
-
-        loop { select! {
+    pub async fn recv(&mut self) -> Option<ServerSocketMessage> {
+        select! {
             Some(new_socket) = self.new_socket_rx.recv() => {
-                let id = new_socket.id();
-                log::info!("{id} 🔗 Open");
+                let id = new_socket.id().clone();
                 self.connections.insert(id.clone(), new_socket);
+                Some(ServerSocketMessage::Open(id.clone()))
             },
-            Some(socket_message) = self.socket_rx.recv() => {
-                match &socket_message {
-                    ServerSocketMessage::Close((id, reason)) => {
-                        log::info!("{id} 🔗 Close({:#?})", reason);
-                        self.connections.remove(id);
-                    },
-                    ServerSocketMessage::Message((id, message)) => {
-                        log::info!("{id} 🔗 Message({:#?})", message);
-                        result = socket_message;
-                        break;
-                    },
-                }
-            }
-        }}
-
-        result
+            Some(socket_message) = self.socket_rx.recv() => { Some(socket_message) },
+            else => { None },
+        }
     }
 }
 
@@ -63,6 +50,7 @@ pub struct ServerSocketConnection {
 }
 
 pub enum ServerSocketMessage {
+    Open(Uuid),
     Close((Uuid, Option<CloseReason>)),
     Message((Uuid, MessageData)),
 }
@@ -105,6 +93,7 @@ impl ServerSocketConnection {
                     let data: Vec<u8> = message.try_into()?;
                     session.binary(Bytes::copy_from_slice(data.as_slice())).await?;
                 },
+                else => { break; },
             }}
             Ok::<_, Error>(())
         });
