@@ -22,9 +22,8 @@ macro_rules! impl_state_for {
                     data: frand_node::macro_prelude::MessageData,
                 ) -> Self {
                     match data.get_id(depth) {
-                        Some(0) => data.read_state(),
                         Some(_) => Err(data.error(depth, "unknown id")),
-                        None => Err(data.error(depth, "data has no more id")),
+                        None => data.read_state(),
                     }     
                     .unwrap_or_else(|err| panic!("{}::deserialize() Err({err})", stringify!($tys)))
                 }
@@ -38,5 +37,4 @@ impl_state_for!{
     u8, u16, u32, u64, u128, 
     f32, f64,
     char, bool, (),
-    String, 
 }

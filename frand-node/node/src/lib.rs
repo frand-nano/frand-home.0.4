@@ -10,23 +10,21 @@ pub mod prelude {
     pub use crate::{
         bases::{
             MessageData,
-            StateBase, NodeBase, MessageBase, ContainerBase, Emitter, Stater,
+            StateBase, NodeBase, MessageBase, Emitter, Stater,
         },
         extends::{Node, Performer, Container},
     };
 }
 
 pub mod macro_prelude {
+    pub use std::cell::RefCell;
     pub use std::ops::{Deref, DerefMut};
     pub use serde::{Serialize, Deserialize};
     pub use crossbeam::channel::{Sender, Receiver};
 
     pub use crate::{
         prelude::*,
-        result::{NodeError, Result},
-        bases::{
-            Callback, MessageError,
-            MessageDataId, CallbackSender,
-        },
+        result::{Result, NodeError},
+        bases::{MessageDataId, MessageDataKey, CallbackSender},
     };
 }

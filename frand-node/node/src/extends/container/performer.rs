@@ -19,10 +19,6 @@ impl<S: StateBase> DerefMut for Performer<S> {
     fn deref_mut(&mut self) -> &mut Self::Target { &mut self.node }
 }
 
-impl<S: StateBase> ContainerBase<S> for Performer<S> {
-
-}
-
 impl<S: 'static + StateBase> Performer<S> {
     pub fn new<U>(update: U) -> Self 
     where U: 'static + Fn(&S::Node, S::Message, MessageData)
@@ -40,7 +36,7 @@ impl<S: 'static + StateBase> Performer<S> {
     where U: 'static + Fn(&S::Node, S::Message, MessageData)
     {
         let mut result = Self::new(update);
-        node.reset_sender(&result.callback);
+        node.set_callback(&result.callback);
         result.node = node.clone();
         result
     }

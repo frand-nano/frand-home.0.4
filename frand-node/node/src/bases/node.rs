@@ -1,14 +1,18 @@
-use std::{fmt::Debug, ops::Deref};
-use super::{message::{MessageData, MessageDataId}, state::StateBase, Callback, CallbackSender};
+use std::fmt::Debug;
+use super::{message::{MessageData, MessageDataId}, state::StateBase, CallbackSender};
 
-pub trait NodeBase<S: StateBase>: Debug + Clone + Sized + Deref<Target = Callback<S>> + Stater<S> {    
+pub trait NodeBase<S: StateBase>: Debug + Clone + Sized + PartialEq + Emitter<S> + Stater<S> {    
     fn new(
-        sender: &CallbackSender,     
+        callback: &CallbackSender,     
         key: Vec<MessageDataId>,
         id: Option<MessageDataId>,
     ) -> Self;
+}
 
-    fn reset_sender(&self, sender: &CallbackSender);
+pub trait Emitter<S: StateBase> {
+    fn depth(&self) -> usize;
+    fn set_callback(&self, callback: &CallbackSender);
+    fn emit(&self, state: S);
 }
 
 pub trait Stater<S: StateBase> {

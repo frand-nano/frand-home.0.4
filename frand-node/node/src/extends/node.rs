@@ -1,11 +1,18 @@
-use std::ops::Deref;
-use bases::{Callback, CallbackSender, MessageDataId};
+use std::cell::RefCell;
+use bases::{CallbackSender, MessageDataId, MessageDataKey};
+use result::NodeError;
 use crate::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Node<V: StateBase + MessageBase> {
+    depth: usize,
+    key: MessageDataKey,
+    callback: RefCell<CallbackSender>,    
     value: V,
-    callback: Callback<V>,
+}
+
+impl<V: StateBase + MessageBase> Node<V> {
+    pub fn value(&self) -> &V { &self.value }
 }
 
 impl<V: StateBase + MessageBase> Default for Node<V> {
@@ -14,41 +21,57 @@ impl<V: StateBase + MessageBase> Default for Node<V> {
     }
 }
 
-impl<V: StateBase + MessageBase> Deref for Node<V> {
-    type Target = Callback<V>;
-    fn deref(&self) -> &Self::Target { &self.callback }
-}
-
-impl<V: StateBase + MessageBase> Node<V> {
-    pub fn value(&self) -> &V { &self.value }
+impl<V: StateBase + MessageBase> PartialEq for Node<V> {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
 }
 
 impl<V: StateBase + MessageBase> NodeBase<V> for Node<V> {    
     fn new(
-        sender: &CallbackSender,   
+        callback: &CallbackSender,   
         mut key: Vec<MessageDataId>,
         id: Option<MessageDataId>,  
     ) -> Self {
         if let Some(id) = id { key.push(id); }
 
         Self { 
+            depth: key.len(),
+            key: key.into_boxed_slice(),
+            callback: RefCell::new(callback.clone()),
             value: V::default(), 
-            callback: Callback::new(sender, key, Some(0)), 
         }
     }
+}
 
-    fn reset_sender(&self, sender: &CallbackSender) { 
-        self.callback.reset_sender(sender); 
+impl<V: StateBase + MessageBase> Emitter<V> for Node<V> {
+    fn depth(&self) -> usize { self.depth }
+
+    fn set_callback(&self, callback: &CallbackSender) { 
+        *self.callback.borrow_mut() = callback.clone();        
+    }
+
+    fn emit(&self, state: V) {
+        self.callback.borrow().send(
+            MessageData::new(&self.key, None, state)
+            .unwrap_or_else(|err| panic!("Callback::emit() deserialize Err({err})"))
+        )
+        .unwrap_or_else(|err| match err {
+            NodeError::Send(err) => {
+                log::debug!("close callback. reason: {err}");
+                *self.callback.borrow_mut() = CallbackSender::None;
+            },
+            _ => panic!("{err}"),
+        })
     }
 }
 
 impl<V: StateBase + MessageBase> Stater<V> for Node<V> {    
     fn apply(&mut self, data: &MessageData) {
-        let depth = self.depth()-1;
+        let depth = self.depth();
         match data.get_id(depth) {
-            Some(0) => data.read_state().map(|state| self.apply_state(state)),
             Some(_) => Err(data.error(depth, "unknown id")),
-            None => Err(data.error(depth, "data has no more id")),
+            None => data.read_state().map(|state| self.apply_state(state)),
         }
         .unwrap_or_else(|err| panic!("Node<V>::apply() deserialize Err({err})"));
     }

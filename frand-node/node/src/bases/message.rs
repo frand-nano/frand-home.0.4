@@ -1,20 +1,15 @@
-use std::{error::Error, io::Cursor};
-use std::fmt::{self, Debug};
+use std::io::Cursor;
+use std::fmt::Debug;
+use result::MessageError;
 use serde::{Deserialize, Serialize};
-use crate::result::{NodeError, Result};
-
-use super::StateBase;
+use crate::{*, result::{NodeError, Result}};
 
 pub type MessageDataId = u32;
 pub type MessageDataKey = Box<[MessageDataId]>;
 pub type MessageDataDepth = u32;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MessageError {
-    pub depth: MessageDataDepth,
-    pub key: MessageDataKey,
-    pub value: Box<[u8]>,
-    pub message: String,
+pub trait MessageBase: Debug + Clone + Sized {
+    fn deserialize(depth: usize, data: MessageData) -> Self;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,18 +17,6 @@ pub struct MessageData {
     key: MessageDataKey,
     value: Box<[u8]>,
 }
-
-pub trait MessageBase: Debug + Clone + Sized {
-    fn deserialize(depth: usize, data: MessageData) -> Self;
-}
-
-impl fmt::Display for MessageError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl Error for MessageError {}
 
 impl MessageData {
     pub fn key(&self) -> &MessageDataKey { &self.key }

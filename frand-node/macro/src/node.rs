@@ -29,8 +29,6 @@ pub fn expand(
         _ => Vec::default(),
     };  
 
-    let state_id = fields.len() as MessageDataId;
-
     let indexes: Vec<_> = (0..fields.len() as MessageDataId).into_iter().collect();
     let names: Vec<_> = fields.iter().filter_map(|field| field.ident.as_ref()).collect();
     let tys: Vec<_> = fields.iter().map(|field| &field.ty).collect();
@@ -97,10 +95,12 @@ pub fn expand(
     let node = quote! {
         #[allow(dead_code)]
         #node_attrs
-        #[derive(Debug, Clone, PartialEq)]
+        #[derive(Debug, Clone)]
         pub struct Node {
+            depth: usize,
+            key: #mp::MessageDataKey,
+            callback: #mp::RefCell<#mp::CallbackSender>,    
             #(pub #names: #ty_nodes,)*
-            callback: #mp::Callback<#state_name>,
         }
 
         impl Default for Node {
@@ -109,39 +109,60 @@ pub fn expand(
             }
         }
 
-        impl #mp::Deref for Node {
-            type Target = #mp::Callback<#state_name>;
-            fn deref(&self) -> &Self::Target { &self.callback }
+        impl PartialEq for Node {
+            fn eq(&self, other: &Self) -> bool {
+                true 
+                #(&& self.#names == other.#names)*
+            }
         }
 
         impl #mp::NodeBase<#state_name> for Node {
             fn new(
-                sender: &#mp::CallbackSender,   
+                callback: &#mp::CallbackSender,   
                 mut key: Vec<#mp::MessageDataId>,
                 id: Option<#mp::MessageDataId>,  
             ) -> Self {
                 if let Some(id) = id { key.push(id); }
 
                 Self { 
-                    callback: #mp::Callback::new(sender, key.clone(), Some(#state_id)), 
-                    #(#names: #ty_nodes::new(sender, key.clone(), Some(#indexes)),)*
+                    depth: key.len(),
+                    key: key.clone().into_boxed_slice(),
+                    callback: #mp::RefCell::new(callback.clone()),
+                    #(#names: #ty_nodes::new(callback, key.clone(), Some(#indexes)),)*
                 }
             }
-            
-            fn reset_sender(&self, sender: &#mp::CallbackSender) {
-                self.callback.reset_sender(sender);
-                #(self.#names.reset_sender(sender);)*
+        }
+
+        impl #mp::Emitter<#state_name> for Node {
+            fn depth(&self) -> usize { self.depth }
+        
+            fn set_callback(&self, callback: &#mp::CallbackSender) { 
+                *self.callback.borrow_mut() = callback.clone();     
+                #(self.#names.set_callback(callback);)*   
+            }
+        
+            fn emit(&self, state: #state_name) {
+                self.callback.borrow().send(
+                    #mp::MessageData::new(&self.key, None, state)
+                    .unwrap_or_else(|err| panic!("Callback::emit() deserialize Err({err})"))
+                )
+                .unwrap_or_else(|err| match err {
+                    #mp::NodeError::Send(err) => {
+                        log::debug!("close callback. reason: {err}");
+                        *self.callback.borrow_mut() = #mp::CallbackSender::None;
+                    },
+                    _ => panic!("{err}"),
+                })
             }
         }
 
         impl Stater<#state_name> for Node {    
             fn apply(&mut self, data: &#mp::MessageData) {
-                let depth = self.callback.depth()-1;
+                let depth = self.depth();
                 match data.get_id(depth) {
                     #(Some(#indexes) => Ok(self.#names.apply(data)),)*
-                    Some(#state_id) => data.read_state().map(|state| self.apply_state(state)),
                     Some(_) => Err(data.error(depth, "unknown id")),
-                    None => Err(data.error(depth, "data has no more id")),
+                    None => data.read_state().map(|state| self.apply_state(state)),
                 }     
                 .unwrap_or_else(|err| panic!("{}::apply() deserialize Err({err})", stringify!(#state_name)));
             }
@@ -164,9 +185,8 @@ pub fn expand(
             fn deserialize(depth: usize, data: #mp::MessageData) -> Self {
                 match data.get_id(depth) {
                     #(Some(#indexes) => Ok(Message::#names(#ty_messages::deserialize(depth + 1, data))),)*
-                    Some(#state_id) => data.read_state().map(|state| Self::State(state)),
                     Some(_) => Err(data.error(depth, "unknown id")),
-                    None => Err(data.error(depth, "data has no more id")),
+                    None => data.read_state().map(|state| Self::State(state)),
                 }     
                 .unwrap_or_else(|err| panic!("{}::deserialize() Err({err})", stringify!(#state_name)))
             }

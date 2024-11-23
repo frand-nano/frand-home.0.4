@@ -22,9 +22,9 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData)
         let (inbound_tx, inbound_rx) = unbounded();
         let (node_tx, node_rx) = unbounded();
 
-        let sender = CallbackSender::Sender(node_tx.clone());
+        let callback = CallbackSender::Sender(node_tx.clone());
         let processor = Self { 
-            node: S::Node::new(&sender, vec![], None), 
+            node: S::Node::new(&callback, vec![], None), 
             update,
             node_tx,
             node_rx, 

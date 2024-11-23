@@ -1,6 +1,7 @@
 use std::{error::Error, fmt, string::FromUtf8Error};
 use crossbeam::channel::SendError;
-use crate::bases::{MessageData, MessageError};
+use serde::{Deserialize, Serialize};
+use crate::bases::{MessageData, MessageDataDepth, MessageDataKey};
 
 pub type Result<T, E = NodeError> = core::result::Result<T, E>;
 
@@ -28,6 +29,22 @@ impl fmt::Display for NodeError {
 }
 
 impl Error for NodeError {}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MessageError {
+    pub depth: MessageDataDepth,
+    pub key: MessageDataKey,
+    pub value: Box<[u8]>,
+    pub message: String,
+}
+
+impl fmt::Display for MessageError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for MessageError {}
 
 impl From<String> for NodeError {
     fn from(value: String) -> Self {
