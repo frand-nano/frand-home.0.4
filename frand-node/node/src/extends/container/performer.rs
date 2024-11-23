@@ -7,7 +7,7 @@ use super::Processor;
 pub struct Performer<S: StateBase> {     
     node: S::Node,     
     callback: CallbackSender,
-    input: Sender<MessageData>, 
+    inbound_tx: Sender<MessageData>, 
 }
 
 impl<S: StateBase> Deref for Performer<S> {
@@ -24,17 +24,17 @@ impl<S: StateBase> ContainerBase<S> for Performer<S> {
 }
 
 impl<S: 'static + StateBase> Performer<S> {
-    pub fn input(&self) -> &Sender<MessageData> { &self.input }
+    pub fn inbound_tx(&self) -> &Sender<MessageData> { &self.inbound_tx }
 
     pub fn new<U>(update: U) -> Self 
     where U: 'static + Fn(&S::Node, S::Message, MessageData)
     {
-        let (callback, input) = Processor::<S, U>::new_callback(update);
+        let (callback, inbound_tx) = Processor::<S, U>::new_callback(update);
 
         Self { 
             node: S::Node::new(&callback, vec![], None), 
             callback,
-            input,
+            inbound_tx,
         }      
     }
 

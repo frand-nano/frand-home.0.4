@@ -11,7 +11,7 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData)
     update: U,
     node_tx: Sender<MessageData>,
     node_rx: Receiver<MessageData>, 
-    input: Receiver<MessageData>,
+    inbound: Receiver<MessageData>,
     handled_messages: HashSet<MessageDataKey>,
 }
 
@@ -19,7 +19,7 @@ impl<S: 'static + StateBase, U> Processor<S, U>
 where U: 'static + Fn(&S::Node, S::Message, MessageData)
 {
     pub fn new(update: U) -> (Processor<S, U>, Sender<MessageData>) {
-        let (input, input_rx) = unbounded();
+        let (inbound_tx, inbound_rx) = unbounded();
         let (node_tx, node_rx) = unbounded();
 
         let sender = CallbackSender::Sender(node_tx.clone());
@@ -28,20 +28,20 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData)
             update,
             node_tx,
             node_rx, 
-            input: input_rx,
+            inbound: inbound_rx,
             handled_messages: HashSet::new(),
         };
 
-        (processor, input)
+        (processor, inbound_tx)
     }
     
     pub fn new_callback(update: U) -> (CallbackSender, Sender<MessageData>) {
-        let (processor, input) = Self::new(update);
+        let (processor, inbound_tx) = Self::new(update);
 
-        let input_clone = input.clone();
+        let inbound_tx_clone = inbound_tx.clone();
         let processor = Mutex::new(processor);
         let callback = CallbackSender::callback(move |data| {
-            input_clone.send(data)?;
+            inbound_tx_clone.send(data)?;
 
             processor.lock()
             .map_err(|err| NodeError::Poison(err.to_string()))?
@@ -50,11 +50,11 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData)
             Ok(())
         });
 
-        (callback, input)
+        (callback, inbound_tx)
     }
 
     pub fn process(&mut self) {
-        for data in self.input.try_iter() {
+        for data in self.inbound.try_iter() {
             self.node_tx.send(data)
             .unwrap_or_else(|err| 
                 panic!("Unexpected error while sending message. self.node_tx.send(data): Err({err})")

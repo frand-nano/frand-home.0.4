@@ -5,7 +5,7 @@ use super::{client_socket::{ClientSocket, SocketMessage}, simple::{Simple, Simpl
 
 pub struct SimpleComponent {
     performer: Performer<Simple>,
-    socket: ClientSocket<Self>,
+    socket: ClientSocket,
     message_count: usize,
 }
 
@@ -21,7 +21,7 @@ impl DerefMut for SimpleComponent {
 impl SimpleComponent {
     pub fn new(context: &yew::Context<Self>) -> Self {
         let callback = context.link().callback(
-            |message: MessageData| SocketMessage::Receive(message)
+            |message: MessageData| SocketMessage::FromServer(message)
         );
 
         let update = move |node: &SimpleMod::Node, message, data| {
@@ -64,7 +64,7 @@ impl SimpleComponent {
 }
 
 impl yew::Component for SimpleComponent {
-    type Message = SocketMessage<MessageData>;
+    type Message = SocketMessage;
     type Properties = SimpleMod::Node;
 
     fn create(context: &yew::Context<Self>) -> Self {
@@ -118,10 +118,10 @@ impl yew::Component for SimpleComponent {
 
     fn update(&mut self, _ctx: &yew::Context<Self>, message: Self::Message) -> bool {
         match message {
-            SocketMessage::Send(message) => {
+            SocketMessage::ToServer(message) => {
                 self.socket.send(message);
             },
-            SocketMessage::Receive(message) => {
+            SocketMessage::FromServer(message) => {
                 self.apply(&message);
             },
         }

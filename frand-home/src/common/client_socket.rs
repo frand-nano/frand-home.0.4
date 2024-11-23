@@ -1,35 +1,33 @@
-use std::{marker::PhantomData, ops::Deref};
-
+use std::ops::Deref;
 use frand_node::MessageData;
 use yew::{Component, Context};
 use yew_websocket::websocket::{WebSocketService, WebSocketStatus, WebSocketTask};
 
-use super::simple_component::SimpleComponent;
-
-pub struct ClientSocket<C: Component> {
-    task: Option<WebSocketTask>,
-    _phantom: PhantomData<C>,
+pub enum SocketMessage {
+    ToServer(MessageData),
+    FromServer(MessageData),
 }
 
-pub enum SocketMessage<M> {
-    Send(M),
-    Receive(M),
-}
-
-impl<M> Deref for SocketMessage<M> {
-    type Target = M;
+impl Deref for SocketMessage {
+    type Target = MessageData;
     fn deref(&self) -> &Self::Target {
         match self {
-            SocketMessage::Send(message) => message,
-            SocketMessage::Receive(message) => message,
+            SocketMessage::ToServer(message) => message,
+            SocketMessage::FromServer(message) => message,
         }
     }
 }
 
-impl<C: Component> ClientSocket<C> {
-    pub fn new(context: &Context<SimpleComponent>) -> Self {
+pub struct ClientSocket {
+    outbound_tx: Option<WebSocketTask>,
+}
+
+impl ClientSocket {
+    pub fn new<C: Component>(context: &Context<C>) -> Self 
+    where <C as yew::Component>::Message: std::convert::From<SocketMessage> 
+    {
         let callback = context.link().callback(
-            |message| SocketMessage::Send(message)
+            |message| SocketMessage::ToServer(message)
         );
 
         let notification = context.link().batch_callback(
@@ -40,14 +38,14 @@ impl<C: Component> ClientSocket<C> {
             }
         );
 
-        let task = WebSocketService::connect(
+        let to_server = WebSocketService::connect(
             "/ws", 
             callback,
             notification,
         );
 
-        let task = match task {
-            Ok(task) => Some(task),
+        let outbound_tx = match to_server {
+            Ok(to_server) => Some(to_server),
             Err(err) => {
                 log::error!(" ClientSocket::new() -> Err({err})");
                 None
@@ -55,14 +53,13 @@ impl<C: Component> ClientSocket<C> {
         };
 
         Self { 
-            task,
-            _phantom: PhantomData::default(),
+            outbound_tx,
         }
     }
 
     pub fn send(&mut self, message: MessageData) {
-        if let Some(task) = &mut self.task {
-            task.send_binary(message.try_into().unwrap())
+        if let Some(outbound_tx) = &mut self.outbound_tx {
+            outbound_tx.send_binary(message.try_into().unwrap())
         }              
     }
 }

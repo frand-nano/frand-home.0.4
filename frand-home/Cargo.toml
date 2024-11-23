@@ -18,6 +18,7 @@ wasm-logger = "0.2.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.4", features = ["rt", "rt-multi-thread", "macros"] }
+futures-util = "0.3"
 rustls = "0.22"
 rustls-pemfile = "2"
 yew = { version = "0.21", features = ["csr", "ssr"] }
@@ -29,6 +30,7 @@ actix-proxy = "0.2.0"
 actix-files = "0.6.5"
 actix-ws = "0.3.0"
 dotenv = "0.15"
+uuid = { version = "1.8.0", features = ["v4"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.log4rs]
 version = "1.3"
