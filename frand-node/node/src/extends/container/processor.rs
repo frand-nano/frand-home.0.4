@@ -1,33 +1,8 @@
-use std::{collections::HashSet, fmt::Debug, ops::{Deref, DerefMut}, sync::{Arc, Mutex}};
+use std::{collections::HashSet, sync::Mutex};
 use crossbeam::channel::{unbounded, Receiver, Sender};
-
-use crate::{
-    bases::{
-        message::{MessageBase, MessageData, MessageDataKey}, 
-        node::NodeBase, CallbackSender, 
-    }, 
-    result::{NodeError, Result},
-};
-
-use super::StateBase;
-
-#[derive(Clone)]
-pub struct ProcessorCallback(Arc<dyn Fn(MessageData) -> Result<()>>);
-
-impl Debug for ProcessorCallback {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("ProcessorCallback(Arc<dyn Fn(MessageData) -> Result<()>>)")
-    }
-}
-
-impl Deref for ProcessorCallback {
-    type Target = Arc<dyn Fn(MessageData) -> Result<()>>;
-    fn deref(&self) -> &Self::Target { &self.0 }
-}
-
-impl DerefMut for ProcessorCallback {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
-}
+use bases::{CallbackSender, MessageDataKey};
+use result::NodeError;
+use crate::*;
 
 pub struct Processor<S: StateBase, U> 
 where U: 'static + Fn(&S::Node, S::Message, MessageData)
@@ -60,12 +35,12 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData)
         (processor, input)
     }
     
-    pub fn new_callback(update: U) -> (ProcessorCallback, Sender<MessageData>) {
+    pub fn new_callback(update: U) -> (CallbackSender, Sender<MessageData>) {
         let (processor, input) = Self::new(update);
 
         let input_clone = input.clone();
         let processor = Mutex::new(processor);
-        let callback = ProcessorCallback(Arc::new(move |data| {
+        let callback = CallbackSender::callback(move |data| {
             input_clone.send(data)?;
 
             processor.lock()
@@ -73,7 +48,7 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData)
             .process();
 
             Ok(())
-        }));
+        });
 
         (callback, input)
     }

@@ -79,13 +79,13 @@ impl yew::Component for SimpleComponent {
             )
         };
 
-        let s1n1 = (add1)(self.node().sub1.number1.clone());
-        let s1n2 = (add1)(self.node().sub1.number2.clone());
-        let s1n3 = (add1)(self.node().sub1.number3.clone());
+        let s1n1 = (add1)(self.sub1.number1.clone());
+        let s1n2 = (add1)(self.sub1.number2.clone());
+        let s1n3 = (add1)(self.sub1.number3.clone());
 
-        let s2n1 = (add1)(self.node().sub2.number1.clone());
-        let s2n2 = (add1)(self.node().sub2.number2.clone());
-        let s2n3 = (add1)(self.node().sub2.number3.clone());
+        let s2n1 = (add1)(self.sub2.number1.clone());
+        let s2n2 = (add1)(self.sub2.number2.clone());
+        let s2n3 = (add1)(self.sub2.number3.clone());
 
         html! {
             <div>

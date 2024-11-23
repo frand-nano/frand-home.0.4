@@ -24,8 +24,6 @@ pub struct MessageData {
 }
 
 pub trait MessageBase: Debug + Clone + Sized {
-    type State: StateBase;
-    
     fn deserialize(depth: usize, data: MessageData) -> Self;
 }
 

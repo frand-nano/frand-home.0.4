@@ -109,11 +109,12 @@ pub fn expand(
             }
         }
 
-        impl #mp::NodeBase for Node {
-            type State = #state_name;
+        impl #mp::Deref for Node {
+            type Target = #mp::Callback<#state_name>;
+            fn deref(&self) -> &Self::Target { &self.callback }
+        }
 
-            fn emit(&self, state: &#state_name) { self.callback.emit(state) }
-
+        impl #mp::NodeBase<#state_name> for Node {
             fn new(
                 sender: &#mp::CallbackSender,   
                 mut key: Vec<#mp::MessageDataId>,
@@ -126,13 +127,10 @@ pub fn expand(
                     #(#names: #ty_nodes::new(sender, key.clone(), Some(#indexes)),)*
                 }
             }
+        }
 
-            fn reset_sender(&self, sender: &#mp::CallbackSender) {
-                self.callback.reset_sender(sender);
-                #(self.#names.reset_sender(sender);)*
-            }
-
-            fn apply(&mut self, data: &#mp::MessageData) {                
+        impl Stater<#state_name> for Node {    
+            fn apply(&mut self, data: &#mp::MessageData) {
                 let depth = self.callback.depth()-1;
                 match data.get_id(depth) {
                     #(Some(#indexes) => Ok(self.#names.apply(data)),)*
@@ -142,7 +140,7 @@ pub fn expand(
                 }     
                 .unwrap_or_else(|err| panic!("{}::apply() deserialize Err({err})", stringify!(#state_name)));
             }
-
+        
             fn apply_state(&mut self, state: #state_name) {
                 #(self.#names.apply_state(state.#names);)*
             }
@@ -158,8 +156,6 @@ pub fn expand(
         }
 
         impl #mp::MessageBase for Message {
-            type State = #state_name;
-
             fn deserialize(depth: usize, data: #mp::MessageData) -> Self {
                 match data.get_id(depth) {
                     #(Some(#indexes) => Ok(Message::#names(#ty_messages::deserialize(depth + 1, data))),)*

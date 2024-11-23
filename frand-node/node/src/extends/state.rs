@@ -17,8 +17,6 @@ macro_rules! impl_state_for {
             }
 
             impl frand_node::macro_prelude::MessageBase for $tys {
-                type State = Self;
-
                 fn deserialize(
                     depth: usize,
                     data: frand_node::macro_prelude::MessageData,

@@ -1,7 +1,8 @@
+use std::ops::{Deref, DerefMut};
 use crossbeam::channel::Sender;
-use crate::{*,
-    bases::{message::MessageData, CallbackSender, Processor},
-};
+use bases::{CallbackSender, Emitter};
+use crate::*;
+use super::Processor;
 
 pub struct Performer<S: StateBase> {     
     node: S::Node,     
@@ -9,15 +10,26 @@ pub struct Performer<S: StateBase> {
     input: Sender<MessageData>, 
 }
 
+impl<S: StateBase> Deref for Performer<S> {
+    type Target = S::Node;
+    fn deref(&self) -> &Self::Target { &self.node }
+}
+
+impl<S: StateBase> DerefMut for Performer<S> {
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.node }
+}
+
+impl<S: StateBase> ContainerBase<S> for Performer<S> {
+
+}
+
 impl<S: 'static + StateBase> Performer<S> {
-    pub fn node(&self) -> &S::Node { &self.node }
     pub fn input(&self) -> &Sender<MessageData> { &self.input }
 
     pub fn new<U>(update: U) -> Self 
     where U: 'static + Fn(&S::Node, S::Message, MessageData)
     {
         let (callback, input) = Processor::<S, U>::new_callback(update);
-        let callback = CallbackSender::Callback(callback);
 
         Self { 
             node: S::Node::new(&callback, vec![], None), 
@@ -33,19 +45,5 @@ impl<S: 'static + StateBase> Performer<S> {
         node.reset_sender(&result.callback);
         result.node = node.clone();
         result
-    }
-
-    pub fn apply(&mut self, message: &MessageData) {
-        self.node.apply(message)
-    }
-
-    pub fn apply_messages<I>(&mut self, messages: I) 
-    where 
-        I: Iterator<Item = MessageData>,
-        I::Item: AsRef<MessageData>,
-    {
-        for message in messages {
-            self.node.apply(message.as_ref());
-        }
     }
 }
