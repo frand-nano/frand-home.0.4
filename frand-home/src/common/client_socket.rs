@@ -24,7 +24,7 @@ pub struct ClientSocket {
 
 impl ClientSocket {
     pub fn new<C: Component>(context: &Context<C>) -> Self 
-    where <C as yew::Component>::Message: std::convert::From<SocketMessage> 
+    where <C as Component>::Message: From<SocketMessage> 
     {
         let callback = context.link().callback(
             |message| SocketMessage::ToServer(message)
@@ -32,9 +32,9 @@ impl ClientSocket {
 
         let notification = context.link().batch_callback(
             |status| match status {
-                WebSocketStatus::Opened => None,
-                WebSocketStatus::Closed => None,
-                WebSocketStatus::Error => None,
+                WebSocketStatus::Opened => { log::info!("ClientSocket Opened"); None },
+                WebSocketStatus::Closed => { log::info!("ClientSocket Closed"); None },
+                WebSocketStatus::Error => { log::info!("ClientSocket Error"); None },
             }
         );
 
