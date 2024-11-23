@@ -32,7 +32,7 @@ impl CallbackSender {
 
 pub trait Emitter<S: StateBase> {
     fn depth(&self) -> usize;
-    fn emit(&self, state: &S);
+    fn emit(&self, state: S);
 }
 
 #[derive(Clone, Debug)]
@@ -52,7 +52,7 @@ impl<S: StateBase> PartialEq for Callback<S> {
 impl<S: StateBase> Emitter<S> for Callback<S> {
     fn depth(&self) -> usize { self.depth }
 
-    fn emit(&self, state: &S) {
+    fn emit(&self, state: S) {
         self.sender.borrow().send(
             MessageData::new(&self.key, None, state)
             .unwrap_or_else(|err| panic!("Callback::emit() deserialize Err({err})"))

@@ -61,6 +61,7 @@ where U: 'static + Fn(&S::Node, S::Message, MessageData)
             );
 
             while let Ok(data) = self.node_rx.try_recv() {
+                log::info!("self.node_rx.try_recv() {:?}", data);
                 if !self.handled_messages.contains(data.key()) {
                     self.handled_messages.insert(data.key().clone());
     

@@ -4,7 +4,7 @@ use anyhow::Error;
 use frand_node::MessageData;
 use futures_util::StreamExt;
 use actix_ws::{CloseReason, Message, MessageStream, Session};
-use tokio::{select, sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender}, task::spawn_local};
+use tokio::{select, sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender}, task::spawn_local};
 use uuid::Uuid;
 
 pub struct ServerSocket {
@@ -25,10 +25,10 @@ impl ServerSocket {
         }
     }
 
-    pub fn broadcast(&self, message: MessageData) -> Result<(), SendError<MessageData>> {
-        Ok(for connection in self.connections.values() {
-            connection.send(message.clone())?;
-        })
+    pub fn broadcast(&self, message: MessageData) {
+        for connection in self.connections.values() {
+            connection.send(message.clone());
+        }
     }
 
     pub async fn recv(&mut self) -> Option<ServerSocketMessage> {
@@ -38,7 +38,16 @@ impl ServerSocket {
                 self.connections.insert(id.clone(), new_socket);
                 Some(ServerSocketMessage::Open(id.clone()))
             },
-            Some(socket_message) = self.socket_rx.recv() => { Some(socket_message) },
+            Some(socket_message) = self.socket_rx.recv() => { 
+                match &socket_message {
+                    ServerSocketMessage::Open(_) => Some(socket_message),
+                    ServerSocketMessage::Message(_) => Some(socket_message),
+                    ServerSocketMessage::Close((id, _)) => { 
+                        self.connections.remove(id);
+                        Some(socket_message) 
+                    },
+                }                
+            },
             else => { None },
         }
     }
@@ -104,7 +113,9 @@ impl ServerSocketConnection {
         }
     }
 
-    pub fn send(&self, message: MessageData) -> Result<(), SendError<MessageData>> {
-        self.outbound_tx.send(message)
+    pub fn send(&self, message: MessageData) {
+        if let Err(err) = self.outbound_tx.send(message) {
+            log::info!("A closed ServerSocketConnection might not have been removed from the list. -> Err({err})")
+        }
     }
 }

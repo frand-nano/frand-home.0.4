@@ -24,8 +24,6 @@ impl<S: StateBase> ContainerBase<S> for Performer<S> {
 }
 
 impl<S: 'static + StateBase> Performer<S> {
-    pub fn inbound_tx(&self) -> &Sender<MessageData> { &self.inbound_tx }
-
     pub fn new<U>(update: U) -> Self 
     where U: 'static + Fn(&S::Node, S::Message, MessageData)
     {
@@ -45,5 +43,10 @@ impl<S: 'static + StateBase> Performer<S> {
         node.reset_sender(&result.callback);
         result.node = node.clone();
         result
+    }
+
+    pub fn send(&self, data: MessageData) {
+        self.inbound_tx.send(data)
+        .expect("Failed to send data through inbound_tx: the callback might have been dropped or modified")
     }
 }

@@ -1,6 +1,6 @@
 use actix_web::{dev::Server, middleware::Logger, web::{self, Data}, App, HttpRequest, HttpResponse, HttpServer};
 use anyhow::Result;
-use tokio::{sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender}, task::JoinHandle, try_join};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use crate::backend::{server_socket::ServerSocket, settings::Settings, simple_component::SimpleComponent};
 
 use super::{route, server_socket::{ServerSocketConnection, ServerSocketMessage}};
@@ -18,15 +18,8 @@ pub async fn serve() -> Result<()> {
     let (new_socket_tx, new_socket_rx) = unbounded_channel::<ServerSocketConnection>();
     let (socket_tx, socket_rx) = unbounded_channel::<ServerSocketMessage>();
     
-    let socket_server = run_socket_server(new_socket_rx, socket_rx);
-    let http_server = run_http_server(new_socket_tx, socket_tx)?;
-        
-    let socket_server = async move { 
-        socket_server.await
-        .map_err(|err| std::io::Error::from(err)) 
-    };
-
-    try_join!(socket_server, http_server)?.0?;    
+    run_socket_server(new_socket_rx, socket_rx);
+    run_http_server(new_socket_tx, socket_tx)?.await?;
 
     Ok(())
 }
@@ -34,10 +27,10 @@ pub async fn serve() -> Result<()> {
 fn run_socket_server(
     new_socket_rx: UnboundedReceiver<ServerSocketConnection>,
     socket_rx: UnboundedReceiver<ServerSocketMessage>,
-) -> JoinHandle<Result<()>> {
+) {
     let server_socket = ServerSocket::new(new_socket_rx, socket_rx);
     let socket_server = SimpleComponent::new(server_socket);
-    socket_server.run()
+    socket_server.run();
 }
 
 fn run_http_server(

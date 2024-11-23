@@ -41,7 +41,7 @@ impl MessageData {
     pub fn new<S: StateBase>(
         key: &MessageDataKey, 
         id: Option<MessageDataId>, 
-        value: &S,
+        value: S,
     ) -> Result<Self> {
         let mut key = key.to_vec();
 
@@ -53,7 +53,7 @@ impl MessageData {
             value: Default::default(), 
         };
 
-        match ciborium::into_writer(value, &mut buffer) {
+        match ciborium::into_writer(&value, &mut buffer) {
             Ok(()) => {
                 result.value = buffer.into_boxed_slice();
                 Ok(result)

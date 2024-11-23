@@ -1,20 +1,10 @@
-use std::ops::{Deref, DerefMut};
 use frand_node::*;
 use yew::{html, Html};
 use super::{client_socket::{ClientSocket, SocketMessage}, simple::{Simple, SimpleMod}};
 
 pub struct SimpleComponent {
-    container: Container<Simple>,
+    simple: Container<Simple>,
     socket: ClientSocket,
-}
-
-impl Deref for SimpleComponent {
-    type Target = Container<Simple>;
-    fn deref(&self) -> &Self::Target { &self.container }
-}
-
-impl DerefMut for SimpleComponent {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.container }
 }
 
 impl SimpleComponent {
@@ -28,7 +18,7 @@ impl SimpleComponent {
         };
 
         Self {
-            container: Container::<Simple>::new_with(context.props(), update),
+            simple: Container::<Simple>::new_with(context.props(), update),
             socket: ClientSocket::new(context),
         }        
     }
@@ -43,22 +33,24 @@ impl yew::Component for SimpleComponent {
     }
 
     fn view(&self, _ctx: &yew::Context<Self>) -> Html {    
+        let simple = &self.simple;
+
         let add1 = |node: Node<i32>| {
             (
                 *node.value(),
-                move |_| node.emit(&(node.value() + 1)), 
+                move |_| node.emit(node.value() + 1), 
             )
         };
 
-        let s1n1 = (add1)(self.sub1.number1.clone());
-        let s1n2 = (add1)(self.sub1.number2.clone());
-        let s1n3 = (add1)(self.sub1.number3.clone());
+        let s1n1 = (add1)(simple.sub1.number1.clone());
+        let s1n2 = (add1)(simple.sub1.number2.clone());
+        let s1n3 = (add1)(simple.sub1.number3.clone());
 
-        let s2n1 = (add1)(self.sub2.number1.clone());
-        let s2n2 = (add1)(self.sub2.number2.clone());
-        let s2n3 = (add1)(self.sub2.number3.clone());
+        let s2n1 = (add1)(simple.sub2.number1.clone());
+        let s2n2 = (add1)(simple.sub2.number2.clone());
+        let s2n3 = (add1)(simple.sub2.number3.clone());
 
-        let message_count = self.message_count.value();
+        let message_count = simple.message_count.value();
 
         html! {
             <div>
@@ -95,7 +87,7 @@ impl yew::Component for SimpleComponent {
                 self.socket.send(message);
             },
             SocketMessage::FromServer(message) => {
-                self.apply(&message);
+                self.simple.apply(&message);
             },
         }
         true
