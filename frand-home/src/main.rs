@@ -10,7 +10,7 @@ fn main() {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-#[tokio::main]
+#[actix_web::main]
 async fn main() -> anyhow::Result<()> {
     backend::serve::serve().await
 }

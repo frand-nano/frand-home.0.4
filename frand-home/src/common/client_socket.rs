@@ -49,7 +49,7 @@ impl<C: Component> ClientSocket<C> {
         let task = match task {
             Ok(task) => Some(task),
             Err(err) => {
-                log::error!(" ClientSocket::new connect err: {err}");
+                log::error!(" ClientSocket::new() -> Err({err})");
                 None
             },
         };
