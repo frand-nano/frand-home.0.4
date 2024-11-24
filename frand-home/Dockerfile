@@ -3,6 +3,7 @@ FROM frand-builder AS builder
 
 WORKDIR ${PROJECT_PATH}
 COPY --from=frand-node ${PROJECT_PATH} ${PROJECT_PATH}/frand-node
+COPY --from=frand-web ${PROJECT_PATH} ${PROJECT_PATH}/frand-web
 
 WORKDIR ${APP_PATH}
 COPY . .

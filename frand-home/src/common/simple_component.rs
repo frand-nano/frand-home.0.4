@@ -1,6 +1,7 @@
 use frand_node::*;
+use frand_web::yew::client_socket::{ClientSocket, SocketMessage};
 use yew::{html, Html};
-use super::{client_socket::{ClientSocket, SocketMessage}, simple::{Simple, SimpleMod}};
+use super::simple::{Simple, SimpleMod};
 
 pub struct SimpleComponent {
     simple: Container<Simple>,

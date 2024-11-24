@@ -1,0 +1,38 @@
+[package]
+name = "frand-web"
+version = "0.4.1"
+edition = "2021"
+authors = [ "Frand <frand.nano@gmail.com>" ]
+repository = "https://github.com/frand-nano/frand-home"
+
+[dependencies]
+frand-node = { path = "../frand-node/node" }
+log = "0.4"
+anyhow = "1.0"
+serde = "1"
+uuid = { version = "1.8.0", features = ["v4"] }
+
+# Yew
+yew = { version = "0.21", optional = true }
+yew-websocket = { version = "1", optional = true }
+
+# Actix
+futures-util = { version = "0.3", optional = true }
+tokio = { version = "1.4", features = ["rt", "rt-multi-thread", "macros"], optional = true }
+actix = { version = "0.13", optional = true }
+actix-ws = { version = "0.3", optional = true }
+actix-web = { version = "4", features = ["rustls-0_22"], optional = true }
+
+[features]
+default = []
+yew = [
+    "dep:yew", 
+    "dep:yew-websocket",
+    ]
+actix = [
+    "dep:futures-util", 
+    "dep:tokio", 
+    "dep:actix", 
+    "dep:actix-ws", 
+    "dep:actix-web",
+    ]

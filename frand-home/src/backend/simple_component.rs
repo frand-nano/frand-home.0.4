@@ -1,8 +1,7 @@
 use frand_node::*;
+use frand_web::actix::server_socket::{ServerSocket, ServerSocketMessage};
 use tokio::{select, sync::mpsc::{unbounded_channel, UnboundedReceiver}, task::spawn_local};
 use crate::common::simple::{Simple, SimpleMod, SimpleMessage::*, SimpleSubMessage::*};
-
-use super::server_socket::{ServerSocket, ServerSocketMessage};
 
 pub struct SimpleComponent {
     simple: Performer<Simple>,

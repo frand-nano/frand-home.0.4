@@ -1,9 +1,8 @@
 use actix_files::NamedFile;
 use actix_web::{get, web::{Data, Path, Payload}, HttpRequest, HttpResponse};
 use actix_ws::handle;
+use frand_web::actix::server_socket::{ServerSocketConnection, ServerSocketMessage};
 use tokio::sync::mpsc::UnboundedSender;
-
-use crate::backend::server_socket::{ServerSocketConnection, ServerSocketMessage};
 
 #[get("/")]
 pub async fn get_index(

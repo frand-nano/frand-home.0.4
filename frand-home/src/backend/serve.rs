@@ -1,9 +1,10 @@
 use actix_web::{dev::Server, middleware::Logger, web::{self, Data}, App, HttpRequest, HttpResponse, HttpServer};
 use anyhow::Result;
+use frand_web::actix::server_socket::{ServerSocket, ServerSocketConnection, ServerSocketMessage};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use crate::backend::{server_socket::ServerSocket, settings::Settings, simple_component::SimpleComponent};
+use crate::backend::{settings::Settings, simple_component::SimpleComponent};
 
-use super::{route, server_socket::{ServerSocketConnection, ServerSocketMessage}};
+use super::route;
 
 pub async fn serve() -> Result<()> {
     let log4rs_path = Settings::log4rs()?;

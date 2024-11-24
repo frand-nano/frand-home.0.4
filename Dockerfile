@@ -10,11 +10,13 @@ RUN rm -rf $CARGO_HOME/registry
 
 ENV PROJECT_PATH=/usr/src/project
 ENV NODE_PATH=${PROJECT_PATH}/frand-node
+ENV WEB_PATH=${PROJECT_PATH}/frand-web
 ENV APP_PATH=${PROJECT_PATH}/frand-home
 ENV APP_BACKEND_PATH=${APP_PATH}/target/release/frand-home
 ENV APP_DIST_PATH=${APP_PATH}/target/dist
 
 COPY frand-node ${NODE_PATH}
+COPY frand-web ${WEB_PATH}
 COPY frand-home ${APP_PATH}
 
 FROM chef AS planner
