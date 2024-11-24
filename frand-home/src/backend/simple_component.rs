@@ -6,17 +6,17 @@ use crate::common::simple::{Simple, SimpleMod, SimpleMessage::*, SimpleSubMessag
 pub struct SimpleComponent {
     simple: Performer<Simple>,
     server_socket: ServerSocket,
-    broadcast_rx: UnboundedReceiver<MessageData>,
+    broadcast_rx: UnboundedReceiver<Payload>,
 }
 
 impl SimpleComponent {
     pub fn new(
         server_socket: ServerSocket,
     ) -> Self {
-        let (broadcast_tx, broadcast_rx) = unbounded_channel::<MessageData>();
+        let (broadcast_tx, broadcast_rx) = unbounded_channel::<Payload>();
 
-        let update = move |node: &SimpleMod::Node, message, data| {
-            broadcast_tx.send(data).unwrap();
+        let update = move |node: &SimpleMod::Node, message, payload| {
+            broadcast_tx.send(payload).unwrap();
 
             match message {
                 sub1(number1(n)) => {

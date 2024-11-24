@@ -4,7 +4,7 @@ use syn::*;
 use quote::quote;
 use crate::{attrs::Attrs, node_attrs::{NodeAttrItem, NodeAttrKeyItem}};
 
-pub type MessageDataId = u32;
+pub type PayloadId = u32;
 
 pub fn expand(
     attrs: &Attrs<NodeAttrKeyItem>,
@@ -29,7 +29,7 @@ pub fn expand(
         _ => Vec::default(),
     };  
 
-    let indexes: Vec<_> = (0..fields.len() as MessageDataId).into_iter().collect();
+    let indexes: Vec<_> = (0..fields.len() as PayloadId).into_iter().collect();
     let names: Vec<_> = fields.iter().filter_map(|field| field.ident.as_ref()).collect();
     let tys: Vec<_> = fields.iter().map(|field| &field.ty).collect();
 
@@ -98,7 +98,7 @@ pub fn expand(
         #[derive(Debug, Clone)]
         pub struct Node {
             depth: usize,
-            key: #mp::MessageDataKey,
+            key: #mp::PayloadKey,
             callback: #mp::RefCell<#mp::CallbackSender>,    
             #(pub #names: #ty_nodes,)*
         }
@@ -119,8 +119,8 @@ pub fn expand(
         impl #mp::NodeBase<#state_name> for Node {
             fn new(
                 callback: &#mp::CallbackSender,   
-                mut key: Vec<#mp::MessageDataId>,
-                id: Option<#mp::MessageDataId>,  
+                mut key: Vec<#mp::PayloadId>,
+                id: Option<#mp::PayloadId>,  
             ) -> Self {
                 if let Some(id) = id { key.push(id); }
 
@@ -143,8 +143,7 @@ pub fn expand(
         
             fn emit(&self, state: #state_name) {
                 self.callback.borrow().send(
-                    #mp::MessageData::new(&self.key, None, state)
-                    .unwrap_or_else(|err| panic!("Callback::emit() deserialize Err({err})"))
+                    #mp::Payload::new(&self.key, None, state)
                 )
                 .unwrap_or_else(|err| match err {
                     #mp::NodeError::Send(err) => {
@@ -157,12 +156,12 @@ pub fn expand(
         }
 
         impl Stater<#state_name> for Node {    
-            fn apply(&mut self, data: &#mp::MessageData) {
+            fn apply(&mut self, payload: &#mp::Payload) {
                 let depth = self.depth();
-                match data.get_id(depth) {
-                    #(Some(#indexes) => Ok(self.#names.apply(data)),)*
-                    Some(_) => Err(data.error(depth, "unknown id")),
-                    None => data.read_state().map(|state| self.apply_state(state)),
+                match payload.get_id(depth) {
+                    #(Some(#indexes) => Ok(self.#names.apply(payload)),)*
+                    Some(_) => Err(payload.error(depth, "unknown id")),
+                    None => Ok(self.apply_state(payload.read_state())),
                 }     
                 .unwrap_or_else(|err| panic!("{}::apply() deserialize Err({err})", stringify!(#state_name)));
             }
@@ -182,13 +181,13 @@ pub fn expand(
         }
 
         impl #mp::MessageBase for Message {
-            fn deserialize(depth: usize, data: #mp::MessageData) -> Self {
-                match data.get_id(depth) {
-                    #(Some(#indexes) => Ok(Message::#names(#ty_messages::deserialize(depth + 1, data))),)*
-                    Some(_) => Err(data.error(depth, "unknown id")),
-                    None => data.read_state().map(|state| Self::State(state)),
+            fn from_payload(depth: usize, payload: #mp::Payload) -> Self {
+                match payload.get_id(depth) {
+                    #(Some(#indexes) => Ok(Message::#names(#ty_messages::from_payload(depth + 1, payload))),)*
+                    Some(_) => Err(payload.error(depth, "unknown id")),
+                    None => Ok(Self::State(payload.read_state())),
                 }     
-                .unwrap_or_else(|err| panic!("{}::deserialize() Err({err})", stringify!(#state_name)))
+                .unwrap_or_else(|err| panic!("{}::from_payload() Err({err})", stringify!(#state_name)))
             }
         }
     };

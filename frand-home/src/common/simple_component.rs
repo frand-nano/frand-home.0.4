@@ -11,11 +11,11 @@ pub struct SimpleComponent {
 impl SimpleComponent {
     pub fn new(context: &yew::Context<Self>) -> Self {
         let callback = context.link().callback(
-            |message: MessageData| SocketMessage::ToServer(message)
+            |message: Payload| SocketMessage::ToServer(message)
         );
 
-        let update = move |data| {
-            callback.emit(data);
+        let update = move |payload| {
+            callback.emit(payload);
         };
 
         Self {

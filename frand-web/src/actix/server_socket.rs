@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use actix_web::web::Bytes;
 use anyhow::Error;
-use frand_node::MessageData;
+use frand_node::Payload;
 use futures_util::StreamExt;
 use actix_ws::{CloseReason, Message, MessageStream, Session};
 use tokio::{select, sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender}, task::spawn_local};
@@ -25,7 +25,7 @@ impl ServerSocket {
         }
     }
 
-    pub fn broadcast(&self, message: MessageData) {
+    pub fn broadcast(&self, message: Payload) {
         for connection in self.connections.values() {
             connection.send(message.clone());
         }
@@ -55,13 +55,13 @@ impl ServerSocket {
 
 pub struct ServerSocketConnection {
     id: Uuid,
-    outbound_tx: UnboundedSender<MessageData>,      
+    outbound_tx: UnboundedSender<Payload>,      
 }
 
 pub enum ServerSocketMessage {
     Open(Uuid),
     Close((Uuid, Option<CloseReason>)),
-    Message((Uuid, MessageData)),
+    Message((Uuid, Payload)),
 }
 
 impl ServerSocketConnection {
@@ -82,7 +82,7 @@ impl ServerSocketConnection {
                         Message::Binary(bytes) => {
                             inbound_tx.send(
                                 ServerSocketMessage::Message(
-                                    (id, MessageData::try_from(bytes.to_vec())?)
+                                    (id, Payload::try_from(bytes.to_vec())?)
                                 )
                             )?;
                         },
@@ -98,7 +98,7 @@ impl ServerSocketConnection {
                     }
                 },
                 Some(message) = outbound_rx.recv() => {
-                    let message: MessageData = message;
+                    let message: Payload = message;
                     let data: Vec<u8> = message.try_into()?;
                     session.binary(Bytes::copy_from_slice(data.as_slice())).await?;
                 },
@@ -113,7 +113,7 @@ impl ServerSocketConnection {
         }
     }
 
-    pub fn send(&self, message: MessageData) {
+    pub fn send(&self, message: Payload) {
         if let Err(err) = self.outbound_tx.send(message) {
             log::info!("A closed ServerSocketConnection might not have been removed from the list. -> Err({err})")
         }

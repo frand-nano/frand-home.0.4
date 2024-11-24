@@ -19,10 +19,10 @@ impl<S: StateBase> DerefMut for Container<S> {
 
 impl<S: 'static + StateBase> Container<S> {
     pub fn new<U>(update: U) -> Self 
-    where U: 'static + Fn(MessageData)
+    where U: 'static + Fn(Payload)
     {
-        let callback = CallbackSender::callback(move |data| {      
-            (update)(data);
+        let callback = CallbackSender::callback(move |payload| {      
+            (update)(payload);
             Ok(())
         });
 
@@ -33,7 +33,7 @@ impl<S: 'static + StateBase> Container<S> {
     }
 
     pub fn new_with<U>(node: &S::Node, update: U) -> Self 
-    where U: 'static + Fn(MessageData)
+    where U: 'static + Fn(Payload)
     {
         let mut result = Self::new(update);
         node.set_callback(&result.callback);

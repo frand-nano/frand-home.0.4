@@ -17,15 +17,15 @@ macro_rules! impl_state_for {
             }
 
             impl frand_node::macro_prelude::MessageBase for $tys {
-                fn deserialize(
+                fn from_payload(
                     depth: usize,
-                    data: frand_node::macro_prelude::MessageData,
+                    payload: frand_node::macro_prelude::Payload,
                 ) -> Self {
-                    match data.get_id(depth) {
-                        Some(_) => Err(data.error(depth, "unknown id")),
-                        None => data.read_state(),
+                    match payload.get_id(depth) {
+                        Some(_) => Err(payload.error(depth, "unknown id")),
+                        None => Ok(payload.read_state()),
                     }     
-                    .unwrap_or_else(|err| panic!("{}::deserialize() Err({err})", stringify!($tys)))
+                    .unwrap_or_else(|err| panic!("{}::from_payload() Err({err})", stringify!($tys)))
                 }
             }
         )*      

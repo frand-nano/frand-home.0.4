@@ -1,15 +1,15 @@
 use std::ops::Deref;
-use frand_node::MessageData;
+use frand_node::Payload;
 use yew::{Component, Context};
 use yew_websocket::websocket::{WebSocketService, WebSocketStatus, WebSocketTask};
 
 pub enum SocketMessage {
-    ToServer(MessageData),
-    FromServer(MessageData),
+    ToServer(Payload),
+    FromServer(Payload),
 }
 
 impl Deref for SocketMessage {
-    type Target = MessageData;
+    type Target = Payload;
     fn deref(&self) -> &Self::Target {
         match self {
             SocketMessage::ToServer(message) => message,
@@ -57,7 +57,7 @@ impl ClientSocket {
         }
     }
 
-    pub fn send(&mut self, message: MessageData) {
+    pub fn send(&mut self, message: Payload) {
         if let Some(outbound_tx) = &mut self.outbound_tx {
             outbound_tx.send_binary(message.try_into().unwrap())
         }              

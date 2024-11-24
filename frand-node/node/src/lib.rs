@@ -9,7 +9,7 @@ pub mod prelude {
 
     pub use crate::{
         bases::{
-            MessageData,
+            Payload,
             StateBase, NodeBase, MessageBase, Emitter, Stater,
         },
         extends::{Node, Performer, Container},
@@ -25,6 +25,6 @@ pub mod macro_prelude {
     pub use crate::{
         prelude::*,
         result::{Result, NodeError},
-        bases::{MessageDataId, MessageDataKey, CallbackSender},
+        bases::{PayloadId, PayloadKey, CallbackSender},
     };
 }

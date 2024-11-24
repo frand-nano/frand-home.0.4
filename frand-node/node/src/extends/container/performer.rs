@@ -7,7 +7,7 @@ use super::Processor;
 pub struct Performer<S: StateBase> {     
     node: S::Node,     
     callback: CallbackSender,
-    inbound_tx: Sender<MessageData>, 
+    inbound_tx: Sender<Payload>, 
 }
 
 impl<S: StateBase> Deref for Performer<S> {
@@ -21,7 +21,7 @@ impl<S: StateBase> DerefMut for Performer<S> {
 
 impl<S: 'static + StateBase> Performer<S> {
     pub fn new<U>(update: U) -> Self 
-    where U: 'static + Fn(&S::Node, S::Message, MessageData)
+    where U: 'static + Fn(&S::Node, S::Message, Payload)
     {
         let (callback, inbound_tx) = Processor::<S, U>::new_callback(update);
 
@@ -33,7 +33,7 @@ impl<S: 'static + StateBase> Performer<S> {
     }
 
     pub fn new_with<U>(node: &S::Node, update: U) -> Self 
-    where U: 'static + Fn(&S::Node, S::Message, MessageData)
+    where U: 'static + Fn(&S::Node, S::Message, Payload)
     {
         let mut result = Self::new(update);
         node.set_callback(&result.callback);
@@ -41,8 +41,8 @@ impl<S: 'static + StateBase> Performer<S> {
         result
     }
 
-    pub fn send(&self, data: MessageData) {
-        self.inbound_tx.send(data)
-        .expect("Failed to send data through inbound_tx: the callback might have been dropped or modified")
+    pub fn send(&self, payload: Payload) {
+        self.inbound_tx.send(payload)
+        .expect("Failed to send payload through inbound_tx: the callback might have been dropped or modified")
     }
 }
