@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{cell::Ref, fmt::Debug};
 use super::{message::{Payload, PayloadId}, state::StateBase, CallbackSender};
 
 pub trait NodeBase<S: StateBase>: Debug + Clone + Sized + PartialEq + Emitter<S> + Stater<S> {    
@@ -11,6 +11,7 @@ pub trait NodeBase<S: StateBase>: Debug + Clone + Sized + PartialEq + Emitter<S>
 
 pub trait Emitter<S: StateBase> {
     fn depth(&self) -> usize;
+    fn callback(&self) -> Ref<CallbackSender>;
     fn set_callback(&self, callback: &CallbackSender);
     fn emit(&self, state: S);
 }

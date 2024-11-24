@@ -14,6 +14,11 @@ pub fn expand(
 
     let state_name = &state.ident;
 
+    let node_name = Ident::new(
+        &format!("{}Node", state_name.to_string()).to_case(Case::Pascal), 
+        state_name.span(),
+    );
+
     let message_name = Ident::new(
         &format!("{}Message", state_name.to_string()).to_case(Case::Pascal), 
         state_name.span(),
@@ -78,6 +83,12 @@ pub fn expand(
         #state
     };
 
+    let node_forward = quote! {
+        #[allow(dead_code)]
+        #[allow(non_snake_case)]
+        pub type #node_name = #mod_name::Node;
+    };
+
     let message_forward = quote! {
         #[allow(non_snake_case)]
         pub mod #message_name {
@@ -135,6 +146,7 @@ pub fn expand(
 
         impl #mp::Emitter<#state_name> for Node {
             fn depth(&self) -> usize { self.depth }
+            fn callback(&self) -> #mp::Ref<#mp::CallbackSender> { self.callback.borrow() }
         
             fn set_callback(&self, callback: &#mp::CallbackSender) { 
                 *self.callback.borrow_mut() = callback.clone();     
@@ -195,6 +207,7 @@ pub fn expand(
     Ok(quote!{
         #state
 
+        #node_forward
         #message_forward
         
         #[allow(non_snake_case)]

@@ -20,12 +20,6 @@ impl Debug for CallbackSender {
 }
 
 impl CallbackSender {
-    pub fn callback<U>(update: U) -> Self
-    where U: 'static + Fn(Payload) -> Result<()>
-    {
-        Self::Callback(Arc::new(update))
-    }
-
     pub fn send(&self, message: Payload) -> Result<()> {
         Ok(match self {
             Self::Callback(callback) => (callback)(message)?,

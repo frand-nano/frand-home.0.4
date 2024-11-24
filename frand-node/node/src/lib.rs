@@ -10,14 +10,14 @@ pub mod prelude {
     pub use crate::{
         bases::{
             Payload,
-            StateBase, NodeBase, MessageBase, Emitter, Stater,
+            StateBase, NodeBase, MessageBase, Emitter, Stater, 
         },
-        extends::{Node, Performer, Container},
+        extends::{Node, Processor},
     };
 }
 
 pub mod macro_prelude {
-    pub use std::cell::RefCell;
+    pub use std::cell::{Ref, RefCell};
     pub use std::ops::{Deref, DerefMut};
     pub use serde::{Serialize, Deserialize};
     pub use crossbeam::channel::{Sender, Receiver};

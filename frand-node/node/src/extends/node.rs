@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use bases::{CallbackSender, PayloadId, PayloadKey};
 use result::NodeError;
 use crate::*;
@@ -46,6 +46,7 @@ impl<S: StateBase + MessageBase> NodeBase<S> for Node<S> {
 
 impl<S: StateBase + MessageBase> Emitter<S> for Node<S> {
     fn depth(&self) -> usize { self.depth }
+    fn callback(&self) -> Ref<CallbackSender> { self.callback.borrow() }
 
     fn set_callback(&self, callback: &CallbackSender) { 
         *self.callback.borrow_mut() = callback.clone();        

@@ -1,10 +1,10 @@
 use frand_node::*;
 use frand_web::actix::server_socket::{ServerSocket, ServerSocketMessage};
 use tokio::{select, sync::mpsc::{unbounded_channel, UnboundedReceiver}, task::spawn_local};
-use crate::common::simple::{Simple, SimpleMod, SimpleMessage::*, SimpleSubMessage::*};
+use crate::common::simple::{Simple, SimpleMessage::*, SimpleNode, SimpleSubMessage::*};
 
 pub struct SimpleComponent {
-    simple: Performer<Simple>,
+    simple: SimpleNode,
     server_socket: ServerSocket,
     broadcast_rx: UnboundedReceiver<Payload>,
 }
@@ -15,7 +15,7 @@ impl SimpleComponent {
     ) -> Self {
         let (broadcast_tx, broadcast_rx) = unbounded_channel::<Payload>();
 
-        let update = move |node: &SimpleMod::Node, message, payload| {
+        let update = move |node: &SimpleNode, message, payload| {
             broadcast_tx.send(payload).unwrap();
 
             match message {
@@ -47,7 +47,7 @@ impl SimpleComponent {
         };
 
         Self {
-            simple: Performer::<Simple>::new(update),
+            simple: Processor::<Simple>::new_node(update),
             server_socket,
             broadcast_rx,
         }        
@@ -56,21 +56,21 @@ impl SimpleComponent {
     pub fn run(mut self) {
         spawn_local(async move {
             loop { select! {
-                Some(message) = self.broadcast_rx.recv() => {
-                    self.simple.apply(&message);
-                    self.server_socket.broadcast(message);
+                Some(payload) = self.broadcast_rx.recv() => {
+                    self.simple.apply(&payload);
+                    self.server_socket.broadcast(payload);
                 },
-                Some(message) = self.server_socket.recv() => {
-                    match message {
+                Some(payload) = self.server_socket.recv() => {
+                    match payload {
                         ServerSocketMessage::Open(id) => {
                             log::info!("{id} 🔗 Open");
                         },
                         ServerSocketMessage::Close((id, reason)) => {
                             log::info!("{id} 🔗 Close({:#?})", reason);                        
                         },
-                        ServerSocketMessage::Message((id, message)) => {
-                            log::info!("{id} 🔗 Message({:?})", message);
-                            self.simple.send(message);
+                        ServerSocketMessage::Message((id, payload)) => {
+                            log::info!("{id} 🔗 Message({:?})", payload);
+                            self.simple.callback().send(payload).unwrap();
                             self.simple.message_count.emit(self.simple.message_count.value() + 1);
                         },
                     }

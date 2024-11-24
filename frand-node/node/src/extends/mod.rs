@@ -1,8 +1,5 @@
-mod container;
 mod node;
 mod state;
+mod performer;
 
-pub use self::{
-    container::*,
-    node::*,
-};
+pub use self::{node::*, performer::*};
