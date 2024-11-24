@@ -10,7 +10,7 @@ pub mod prelude {
     pub use crate::{
         bases::{
             Payload,
-            StateBase, NodeBase, MessageBase, Emitter, Stater, 
+            ElementBase, StateBase, NodeBase, MessageBase, Emitter, Stater, 
         },
         extends::{Node, Processor},
     };

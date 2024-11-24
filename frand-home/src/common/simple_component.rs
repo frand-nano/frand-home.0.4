@@ -2,10 +2,10 @@ use extends::Processor;
 use frand_node::*;
 use frand_web::yew::client_socket::{ClientSocket, SocketMessage};
 use yew::{html, Html};
-use super::simple::{Simple, SimpleMod, SimpleNode};
+use super::simple::Simple;
 
 pub struct SimpleComponent {
-    simple: SimpleNode,
+    simple: Simple,
     socket: ClientSocket,
 }
 
@@ -15,7 +15,7 @@ impl SimpleComponent {
             |message: Payload| SocketMessage::ToServer(message)
         );
 
-        let update = move |_: &SimpleNode, _, payload| {
+        let update = move |_: &Simple, _, payload| {
             callback.emit(payload);
         };
 
@@ -28,7 +28,7 @@ impl SimpleComponent {
 
 impl yew::Component for SimpleComponent {
     type Message = SocketMessage;
-    type Properties = SimpleMod::Node;
+    type Properties = Simple;
 
     fn create(context: &yew::Context<Self>) -> Self {
         Self::new(context)

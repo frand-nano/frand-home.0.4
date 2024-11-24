@@ -4,35 +4,35 @@ use bases::{CallbackSender, PayloadKey};
 use result::NodeError;
 use crate::*;
 
-pub struct Processor<S: StateBase> {     
-    node: S::Node,    
+pub struct Processor<N: NodeBase> {     
+    node: N,    
     node_rx: Receiver<Payload>, 
     handled_messages: HashSet<PayloadKey>,
 }
 
-impl<S: 'static + StateBase> Processor<S> 
+impl<N: 'static + NodeBase> Processor<N> 
 {
-    pub fn new_node<U>(update: U) -> S::Node
-    where U: 'static + Fn(&S::Node, S::Message, Payload)
+    pub fn new_node<U>(update: U) -> N
+    where U: 'static + Fn(&N, N::Message, Payload)
     {
-        S::Node::new(&Self::new_callback(update), vec![], None)
+        N::new(&Self::new_callback(update), vec![], None)
     }
 
-    pub fn new_node_with<U>(node: &S::Node, update: U) -> S::Node
-    where U: 'static + Fn(&S::Node, S::Message, Payload)
+    pub fn new_node_with<U>(node: &N, update: U) -> N
+    where U: 'static + Fn(&N, N::Message, Payload)
     {
         node.set_callback(&Self::new_callback(update));
         node.clone()
     }
 
     fn new_callback<U>(update: U) -> CallbackSender 
-    where U: 'static + Fn(&S::Node, S::Message, Payload)    
+    where U: 'static + Fn(&N, N::Message, Payload)    
     {        
         let (node_tx, node_rx) = unbounded();
 
         let callback = CallbackSender::Sender(node_tx.clone());
         let processor = Self { 
-            node: S::Node::new(&callback, vec![], None), 
+            node: N::new(&callback, vec![], None), 
             node_rx, 
             handled_messages: HashSet::new(),
         };
@@ -52,7 +52,7 @@ impl<S: 'static + StateBase> Processor<S>
     }
 
     pub fn process<U>(&mut self, update: &U, mut payload: Payload) 
-    where U: 'static + Fn(&S::Node, S::Message, Payload)    
+    where U: 'static + Fn(&N, N::Message, Payload)    
     {
         loop {
             if !self.handled_messages.contains(payload.key()) {
@@ -60,7 +60,7 @@ impl<S: 'static + StateBase> Processor<S>
 
                 self.node.apply(&payload);
                 
-                let message = S::Message::from_payload(0, payload.clone());
+                let message = N::Message::from_payload(0, payload.clone());
                 (update)(&self.node, message, payload);
             }
             match self.node_rx.try_recv() {

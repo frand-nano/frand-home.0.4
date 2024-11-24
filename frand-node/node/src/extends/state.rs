@@ -11,9 +11,14 @@ macro_rules! impl_state_for {
     };
     ( @inner($($tys: ty,)*) ) => {    
         $(
-            impl frand_node::macro_prelude::StateBase for $tys {
+            impl frand_node::macro_prelude::ElementBase for $tys {
+                type State = Self;
                 type Node = frand_node::macro_prelude::Node<Self>;
                 type Message = Self;
+            }
+
+            impl frand_node::macro_prelude::StateBase for $tys {
+
             }
 
             impl frand_node::macro_prelude::MessageBase for $tys {

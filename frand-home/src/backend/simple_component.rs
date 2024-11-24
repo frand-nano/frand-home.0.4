@@ -1,10 +1,10 @@
 use frand_node::*;
 use frand_web::actix::server_socket::{ServerSocket, ServerSocketMessage};
 use tokio::{select, sync::mpsc::{unbounded_channel, UnboundedReceiver}, task::spawn_local};
-use crate::common::simple::{Simple, SimpleMessage::*, SimpleNode, SimpleSubMessage::*};
+use crate::common::simple::{Simple, SimpleMessage::*, SimpleSubMessage::*};
 
 pub struct SimpleComponent {
-    simple: SimpleNode,
+    simple: Simple,
     server_socket: ServerSocket,
     broadcast_rx: UnboundedReceiver<Payload>,
 }
@@ -15,7 +15,7 @@ impl SimpleComponent {
     ) -> Self {
         let (broadcast_tx, broadcast_rx) = unbounded_channel::<Payload>();
 
-        let update = move |node: &SimpleNode, message, payload| {
+        let update = move |node: &Simple, message, payload| {
             broadcast_tx.send(payload).unwrap();
 
             match message {

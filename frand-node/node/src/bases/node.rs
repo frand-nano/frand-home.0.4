@@ -1,7 +1,7 @@
-use std::{cell::Ref, fmt::Debug};
-use super::{message::{Payload, PayloadId}, state::StateBase, CallbackSender};
+use std::cell::Ref;
+use super::{message::{Payload, PayloadId}, state::StateBase, CallbackSender, ElementBase};
 
-pub trait NodeBase<S: StateBase>: Debug + Clone + Sized + PartialEq + Emitter<S> + Stater<S> {    
+pub trait NodeBase: ElementBase + Emitter<Self::State> + Stater<Self::State> {   
     fn new(
         callback: &CallbackSender,     
         key: Vec<PayloadId>,

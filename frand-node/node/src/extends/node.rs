@@ -1,5 +1,5 @@
 use std::cell::{Ref, RefCell};
-use bases::{CallbackSender, PayloadId, PayloadKey};
+use bases::{CallbackSender, ElementBase, PayloadId, PayloadKey};
 use result::NodeError;
 use crate::*;
 
@@ -27,7 +27,13 @@ impl<S: StateBase + MessageBase> PartialEq for Node<S> {
     }
 }
 
-impl<S: StateBase + MessageBase> NodeBase<S> for Node<S> {    
+impl<S: StateBase + MessageBase> ElementBase for Node<S> {
+    type State = S;
+    type Node = Self;
+    type Message = S;
+}
+
+impl<S: StateBase + MessageBase> NodeBase for Node<S> {      
     fn new(
         callback: &CallbackSender,   
         mut key: Vec<PayloadId>,
@@ -41,7 +47,7 @@ impl<S: StateBase + MessageBase> NodeBase<S> for Node<S> {
             callback: RefCell::new(callback.clone()),
             value: S::default(), 
         }
-    }
+    }  
 }
 
 impl<S: StateBase + MessageBase> Emitter<S> for Node<S> {
