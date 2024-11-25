@@ -79,9 +79,7 @@ pub fn expand(
         }
 
         impl Default for #node_name {
-            fn default() -> Self {
-                Self::new(&#mp::Reporter::None, vec![], None)
-            }
+            fn default() -> Self { Self::new(|_| ()) }
         }
 
         impl PartialEq for #node_name {
@@ -98,23 +96,31 @@ pub fn expand(
         }
         
         impl #mp::NodeBase for #node_name {
-            fn new(
-                reporter: &#mp::Reporter,   
+            fn new_child(
+                reporter: #mp::Reporter,   
                 mut key: Vec<#mp::PayloadId>,
                 id: Option<#mp::PayloadId>,  
             ) -> Self {
                 if let Some(id) = id { key.push(id); }
 
                 Self { 
-                    #(#names: #node_tys::new(reporter, key.clone(), Some(#indexes)),)*
+                    #(#names: #node_tys::new_child(reporter.clone(), key.clone(), Some(#indexes)),)*
                     emitter: #mp::Emitter::new(reporter, key),
                 }
             }
+        
+            fn set_callback<F>(&self, callback: F) -> &Self  
+            where F: 'static + Fn(Payload)
+            {
+                self.set_reporter(#mp::Reporter::Callback(#mp::Arc::new(callback)));
+                self
+            }
 
-            fn set_reporter(&self, reporter: &#mp::Reporter) {
+            fn set_reporter(&self, reporter: #mp::Reporter) -> &Self {
                 use #mp::{Deref, BorrowMut};
+                #(self.#names.set_reporter(reporter.clone());)*   
                 self.deref().borrow_mut().set_reporter(reporter);
-                #(self.#names.set_reporter(reporter);)*   
+                self
             }
         }
 

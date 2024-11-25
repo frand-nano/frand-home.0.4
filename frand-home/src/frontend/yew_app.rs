@@ -1,5 +1,3 @@
-use std::sync::Arc;
-use bases::Reporter;
 use frand_node::*;
 use frand_web::yew::client_socket::{ClientSocket, SocketMessage};
 use yew::{html, Html};
@@ -16,12 +14,8 @@ impl YewApp {
             |payload| SocketMessage::ToServer(payload)
         );
 
-        context.props().set_reporter(&Reporter::Callback(Arc::new(
-            move |payload| callback.emit(payload)
-        )));
-
         Self {
-            root: context.props().clone(), 
+            root: context.props().set_callback(move |payload| callback.emit(payload)).clone(), 
             socket: ClientSocket::new(context),
         }        
     }

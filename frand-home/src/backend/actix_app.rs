@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 use frand_node::*;
 use frand_web::actix::server_socket::{ServerSocket, ServerSocketMessage};
 use tokio::{select, sync::mpsc::{unbounded_channel, UnboundedSender}, task::spawn_local};
@@ -64,13 +64,7 @@ impl ActixApp {
         id: Uuid,
         send_tx: UnboundedSender<(Uuid, Payload)>,
     ) -> Root {
-        Root::new(
-            &Reporter::Callback(Arc::new(
-                move |payload| send_tx.send((id, payload)).unwrap()
-            )), 
-            vec![], 
-            None,
-        )
+        Root::new(move |payload| send_tx.send((id, payload)).unwrap())
     }
 }
 

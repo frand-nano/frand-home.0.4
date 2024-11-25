@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, ops::Deref};
+use std::{borrow::BorrowMut, ops::Deref, sync::Arc};
 use bases::{ElementBase, PayloadId, Reporter};
 use crate::*;
 
@@ -18,9 +18,7 @@ impl<S: StateBase + MessageBase> Node<S> {
 }
 
 impl<S: StateBase + MessageBase> Default for Node<S> {
-    fn default() -> Self {
-        Self::new(&Reporter::None, vec![], None)
-    }
+    fn default() -> Self { Self::new(|_| ()) }
 }
 
 impl<S: StateBase + MessageBase> PartialEq for Node<S> {
@@ -36,8 +34,8 @@ impl<S: StateBase + MessageBase> ElementBase for Node<S> {
 }
 
 impl<S: StateBase + MessageBase> NodeBase for Node<S> {      
-    fn new(
-        reporter: &Reporter,   
+    fn new_child(
+        reporter: Reporter,     
         mut key: Vec<PayloadId>,
         id: Option<PayloadId>,  
     ) -> Self {
@@ -49,8 +47,16 @@ impl<S: StateBase + MessageBase> NodeBase for Node<S> {
         }
     }  
 
-    fn set_reporter(&self, reporter: &Reporter) {
+    fn set_callback<F>(&self, callback: F) -> &Self 
+    where F: 'static + Fn(Payload) 
+    {
+        self.set_reporter(Reporter::Callback(Arc::new(callback)));
+        self
+    }
+
+    fn set_reporter(&self, reporter: Reporter) -> &Self {
         self.deref().borrow_mut().set_reporter(reporter);
+        self
     }
 }
 

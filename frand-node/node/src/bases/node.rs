@@ -1,14 +1,23 @@
-use std::ops::Deref;
+use std::{ops::Deref, sync::Arc};
 use super::{message::{Payload, PayloadId}, state::StateBase, ElementBase, Emitter, Reporter};
 
 pub trait NodeBase: ElementBase + Deref<Target = Emitter> + Stater<Self::State> {   
-    fn new(
-        reporter: &Reporter,     
+    fn new<F>(callback: F) -> Self 
+    where F: 'static + Fn(Payload)
+    { 
+        Self::new_child(Reporter::Callback(Arc::new(callback)), vec![], None) 
+    }
+
+    fn new_child(
+        reporter: Reporter,     
         key: Vec<PayloadId>,
         id: Option<PayloadId>,
     ) -> Self;
 
-    fn set_reporter(&self, reporter: &Reporter);
+    fn set_callback<F>(&self, callback: F) -> &Self 
+    where F: 'static + Fn(Payload);
+
+    fn set_reporter(&self, reporter: Reporter) -> &Self;
 }
 
 pub trait Stater<S: StateBase> {

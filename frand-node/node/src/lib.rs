@@ -11,14 +11,13 @@ pub mod prelude {
         bases::{
             Payload, Emitter,
             ElementBase, StateBase, NodeBase, MessageBase, Stater, 
-            Reporter,
         },
         extends::Node,
     };
 }
 
 pub mod macro_prelude {
-    pub use std::{cell::{Ref, RefCell}, ops::{Deref, DerefMut}, borrow::BorrowMut};
+    pub use std::{cell::{Ref, RefCell}, ops::{Deref, DerefMut}, borrow::BorrowMut, sync::Arc};
     pub use serde::{Serialize, Deserialize};
     pub use crossbeam::channel::{Sender, Receiver};
 

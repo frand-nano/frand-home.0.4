@@ -30,20 +30,20 @@ impl Debug for Reporter {
 impl Emitter {
     pub fn depth(&self) -> usize { self.depth }
     pub fn reporter(&self) -> Ref<Reporter> { self.reporter.borrow() }
-    
+
     pub fn new(
-        reporter: &Reporter,   
+        reporter: Reporter,   
         key: Vec<PayloadId>,
     ) -> Self {
         Self { 
             depth: key.len(),
             key: key.into_boxed_slice(),
-            reporter: RefCell::new(reporter.clone()),
+            reporter: RefCell::new(reporter),
         }
     }  
 
-    pub fn set_reporter(&self, reporter: &Reporter) {
-        *self.reporter.borrow_mut() = reporter.clone();
+    pub fn set_reporter(&self, reporter: Reporter) {
+        *self.reporter.borrow_mut() = reporter;
     }
 
     pub fn emit<S: StateBase>(&self, state: S) {
