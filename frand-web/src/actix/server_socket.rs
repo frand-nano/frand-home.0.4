@@ -25,6 +25,10 @@ impl ServerSocket {
         }
     }
 
+    pub fn send(&self, id: &Uuid, message: Payload) {
+        self.connections[id].send(message);
+    }
+
     pub fn broadcast(&self, message: Payload) {
         for connection in self.connections.values() {
             connection.send(message.clone());

@@ -1,7 +1,7 @@
 use yew::Renderer;
-use super::simple_component::SimpleComponent;
+use super::yew_app::YewApp;
 
 #[allow(unused)]
 pub fn render() {
-    Renderer::<SimpleComponent>::new().render();    
+    Renderer::<YewApp>::new().render();    
 }

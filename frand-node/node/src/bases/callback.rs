@@ -20,10 +20,10 @@ impl Debug for CallbackSender {
 }
 
 impl CallbackSender {
-    pub fn send(&self, message: Payload) -> Result<()> {
+    pub fn send(&self, payload: Payload) -> Result<()> {
         Ok(match self {
-            Self::Callback(callback) => (callback)(message)?,
-            Self::Sender(callback) => callback.send(message)?,
+            Self::Callback(callback) => (callback)(payload)?,
+            Self::Sender(callback) => callback.send(payload)?,
             Self::None => (),
         })
     }

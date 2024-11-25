@@ -1,5 +1,5 @@
 mod node;
 mod state;
-mod performer;
+mod activator;
 
-pub use self::{node::*, performer::*};
+pub use self::{node::*, activator::*};

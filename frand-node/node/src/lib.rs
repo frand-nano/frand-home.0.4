@@ -12,7 +12,7 @@ pub mod prelude {
             Payload,
             ElementBase, StateBase, NodeBase, MessageBase, Emitter, Stater, 
         },
-        extends::{Node, Processor},
+        extends::{Node, Container, Processor},
     };
 }
 

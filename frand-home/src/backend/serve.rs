@@ -2,7 +2,7 @@ use actix_web::{dev::Server, middleware::Logger, web::{self, Data}, App, HttpReq
 use anyhow::Result;
 use frand_web::actix::server_socket::{ServerSocket, ServerSocketConnection, ServerSocketMessage};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use crate::backend::{settings::Settings, simple_component::SimpleComponent};
+use crate::backend::{settings::Settings, actix_app::ActixApp};
 
 use super::route;
 
@@ -30,7 +30,7 @@ fn run_socket_server(
     socket_rx: UnboundedReceiver<ServerSocketMessage>,
 ) {
     let server_socket = ServerSocket::new(new_socket_rx, socket_rx);
-    let socket_server = SimpleComponent::new(server_socket);
+    let socket_server = ActixApp::new(server_socket);
     socket_server.run();
 }
 

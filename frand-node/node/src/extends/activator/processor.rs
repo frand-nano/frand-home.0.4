@@ -25,7 +25,7 @@ impl<N: 'static + NodeBase> Processor<N>
         node.clone()
     }
 
-    fn new_callback<U>(update: U) -> CallbackSender 
+    pub fn new_callback<U>(update: U) -> CallbackSender 
     where U: 'static + Fn(&N, N::Message, Payload)    
     {        
         let (node_tx, node_rx) = unbounded();
@@ -40,9 +40,10 @@ impl<N: 'static + NodeBase> Processor<N>
         let processor = Mutex::new(processor);
         let callback = CallbackSender::Callback(
             Arc::new(move |payload| {
-                processor.lock()
-                .map_err(|err| NodeError::Poison(err.to_string()))?
-                .process(&update, payload);
+                let mut processor = processor.lock()
+                .map_err(|err| NodeError::Poison(err.to_string()))?;
+
+                process(&mut processor, &update, payload);
 
                 Ok(())
             }
@@ -50,25 +51,25 @@ impl<N: 'static + NodeBase> Processor<N>
 
         callback
     }
+}
 
-    pub fn process<U>(&mut self, update: &U, mut payload: Payload) 
-    where U: 'static + Fn(&N, N::Message, Payload)    
-    {
-        loop {
-            if !self.handled_messages.contains(payload.key()) {
-                self.handled_messages.insert(payload.key().clone());
+fn process<N: 'static + NodeBase, U>(processor: &mut Processor<N>, update: &U, mut payload: Payload) 
+where U: 'static + Fn(&N, N::Message, Payload)    
+{
+    loop {
+        if !processor.handled_messages.contains(payload.key()) {
+            processor.handled_messages.insert(payload.key().clone());
 
-                self.node.apply(&payload);
-                
-                let message = N::Message::from_payload(0, payload.clone());
-                (update)(&self.node, message, payload);
-            }
-            match self.node_rx.try_recv() {
-                Ok(recv) => payload = recv,
-                Err(_) => break,
-            }
-        }
+            processor.node.apply(&payload);
             
-        self.handled_messages.clear();
+            let message = N::Message::from_payload(0, payload.clone());
+            (update)(&processor.node, message, payload);
+        }
+        match processor.node_rx.try_recv() {
+            Ok(recv) => payload = recv,
+            Err(_) => break,
+        }
     }
+        
+    processor.handled_messages.clear();
 }
