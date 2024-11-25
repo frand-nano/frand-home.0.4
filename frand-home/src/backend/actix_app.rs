@@ -3,13 +3,10 @@ use frand_node::*;
 use frand_web::actix::server_socket::{ServerSocket, ServerSocketMessage};
 use tokio::{select, sync::mpsc::{unbounded_channel, UnboundedSender}, task::spawn_local};
 use uuid::Uuid;
-use crate::common::{
-    node::{server::ServerMessage, client::ClientMessage}, 
-    yew_app::{YewNode, YewNodeMessage},
-};
+use crate::app::root::{backend::handle, Root};
 
 pub struct ActixApp {
-    client_nodes: HashMap<Uuid, YewNode>,
+    client_nodes: HashMap<Uuid, Root>,
     server_socket: ServerSocket,
 }
 
@@ -67,34 +64,12 @@ impl ActixApp {
         id: Uuid,
         send_tx: UnboundedSender<(Uuid, Payload)>,
         broadcast_tx: UnboundedSender<Payload>,
-    ) -> YewNode {
-        let update = move |node: &YewNode, message, payload| {
-            use YewNodeMessage::*;
-            match message {
-                server(message) => {
-                    use ServerMessage::*;
-                    broadcast_tx.send(payload).unwrap();
-                    match message {
-                        number1(n) => node.server.number2.emit(n + 1),
-                        number2(n) => node.server.number3.emit(n + 1),
-                        number3(n) => node.server.number1.emit(n + 1),
-                        _ => {},
-                    }
-                }
-                client(message) => {
-                    use ClientMessage::*;
-                    send_tx.send((id, payload)).unwrap();
-                    match message {
-                        number1(n) => node.client.number2.emit(n + 1),
-                        number2(n) => node.client.number3.emit(n + 1),
-                        number3(n) => node.client.number1.emit(n + 1),
-                        _ => {},
-                    }
-                }
-                _ => {},
+    ) -> Root {
+        Processor::<Root>::new_node(
+            move |node: &Root, message, payload| {
+                handle(&id, &send_tx, &broadcast_tx, node, message, payload)
             }
-        };
-        Processor::<YewNode>::new_node(update)
+        )
     }
 }
 

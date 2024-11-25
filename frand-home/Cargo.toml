@@ -11,6 +11,7 @@ log = "0.4"
 anyhow = "1.0"
 serde = "1"
 yew-websocket = "1"
+uuid = { version = "1.8.0", features = ["v4"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 frand-web = { path = "../frand-web", features = ["yew"] }
@@ -32,7 +33,6 @@ actix-session = { version = "0.9.0", features = ["cookie-session"] }
 actix-proxy = "0.2.0"
 actix-files = "0.6.5"
 dotenv = "0.15"
-uuid = { version = "1.8.0", features = ["v4"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.log4rs]
 version = "1.3"
