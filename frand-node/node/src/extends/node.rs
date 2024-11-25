@@ -1,14 +1,16 @@
-use std::cell::{Ref, RefCell};
-use bases::{CallbackSender, ElementBase, PayloadId, PayloadKey};
-use result::NodeError;
+use std::{borrow::BorrowMut, ops::Deref};
+use bases::{ElementBase, PayloadId, Reporter};
 use crate::*;
 
 #[derive(Debug, Clone)]
 pub struct Node<S: StateBase + MessageBase> {
-    depth: usize,
-    key: PayloadKey,
-    callback: RefCell<CallbackSender>,    
+    emitter: Emitter,    
     value: S,
+}
+
+impl<S: StateBase + MessageBase> Deref for Node<S> {
+    type Target = Emitter;
+    fn deref(&self) -> &Self::Target { &self.emitter }
 }
 
 impl<S: StateBase + MessageBase> Node<S> {
@@ -17,7 +19,7 @@ impl<S: StateBase + MessageBase> Node<S> {
 
 impl<S: StateBase + MessageBase> Default for Node<S> {
     fn default() -> Self {
-        Self::new(&CallbackSender::None, vec![], None)
+        Self::new(&Reporter::None, vec![], None)
     }
 }
 
@@ -35,40 +37,20 @@ impl<S: StateBase + MessageBase> ElementBase for Node<S> {
 
 impl<S: StateBase + MessageBase> NodeBase for Node<S> {      
     fn new(
-        callback: &CallbackSender,   
+        reporter: &Reporter,   
         mut key: Vec<PayloadId>,
         id: Option<PayloadId>,  
     ) -> Self {
         if let Some(id) = id { key.push(id); }
 
         Self { 
-            depth: key.len(),
-            key: key.into_boxed_slice(),
-            callback: RefCell::new(callback.clone()),
+            emitter: Emitter::new(reporter, key),
             value: S::default(), 
         }
     }  
-}
 
-impl<S: StateBase + MessageBase> Emitter<S> for Node<S> {
-    fn depth(&self) -> usize { self.depth }
-    fn callback(&self) -> Ref<CallbackSender> { self.callback.borrow() }
-
-    fn set_callback(&self, callback: &CallbackSender) { 
-        *self.callback.borrow_mut() = callback.clone();        
-    }
-
-    fn emit(&self, state: S) {
-        self.callback.borrow().send(
-            Payload::new(&self.key, None, state)
-        )
-        .unwrap_or_else(|err| match err {
-            NodeError::Send(err) => {
-                log::debug!("close callback. reason: {err}");
-                *self.callback.borrow_mut() = CallbackSender::None;
-            },
-            _ => panic!("{err}"),
-        })
+    fn set_reporter(&self, reporter: &Reporter) {
+        self.deref().borrow_mut().set_reporter(reporter);
     }
 }
 

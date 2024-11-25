@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 
-mod callback;
+mod emitter;
 mod message;
 mod state;
 mod node;
 
 pub use self::{
-    callback::*,
+    emitter::*,
     message::*,
     state::*,
     node::*,

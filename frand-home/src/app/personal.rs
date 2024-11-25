@@ -1,6 +1,7 @@
 use frand_node::*;
 
-#[node(node_attrs(#[derive(yew::Properties)]))]
+#[node]
+#[derive(yew::Properties)]
 pub struct Personal {
     pub number1: i32,
     pub number2: i32,

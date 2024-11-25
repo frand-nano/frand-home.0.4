@@ -2,7 +2,8 @@ use frand_node::*;
 use yew::{html, Html};
 use super::{personal::Personal, shared::Shared};
 
-#[node(node_attrs(#[derive(yew::Properties)]))]
+#[node]
+#[derive(yew::Properties)]
 pub struct Root {
     pub shared: Shared,
     pub personal: Personal,
@@ -65,7 +66,8 @@ pub mod backend {
     }
 }
 
-pub fn view(root: &Root) -> Html {
+#[yew::function_component]
+pub fn RootView(root: &Root) -> Html {
     let add1 = |node: Node<i32>| {
         (
             *node.value(),

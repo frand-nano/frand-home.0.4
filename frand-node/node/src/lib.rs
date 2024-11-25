@@ -9,22 +9,22 @@ pub mod prelude {
 
     pub use crate::{
         bases::{
-            Payload,
-            ElementBase, StateBase, NodeBase, MessageBase, Emitter, Stater, 
+            Payload, Emitter,
+            ElementBase, StateBase, NodeBase, MessageBase, Stater, 
+            Reporter,
         },
-        extends::{Node, Container, Processor},
+        extends::Node,
     };
 }
 
 pub mod macro_prelude {
-    pub use std::cell::{Ref, RefCell};
-    pub use std::ops::{Deref, DerefMut};
+    pub use std::{cell::{Ref, RefCell}, ops::{Deref, DerefMut}, borrow::BorrowMut};
     pub use serde::{Serialize, Deserialize};
     pub use crossbeam::channel::{Sender, Receiver};
 
     pub use crate::{
         prelude::*,
         result::{Result, NodeError},
-        bases::{PayloadId, PayloadKey, CallbackSender},
+        bases::{PayloadId, PayloadKey, Reporter},
     };
 }

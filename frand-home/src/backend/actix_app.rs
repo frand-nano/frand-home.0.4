@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use frand_node::*;
 use frand_web::actix::server_socket::{ServerSocket, ServerSocketMessage};
 use tokio::{select, sync::mpsc::{unbounded_channel, UnboundedSender}, task::spawn_local};
 use uuid::Uuid;
-use crate::app::root::{backend::handle, Root};
+use crate::app::root::Root;
 
 pub struct ActixApp {
     client_nodes: HashMap<Uuid, Root>,
@@ -42,7 +42,7 @@ impl ActixApp {
                             log::info!("{id} 🔗 Open");
                             
                             self.client_nodes.insert(id, 
-                                Self::new_yew_node(id, send_tx.clone(), broadcast_tx.clone()),
+                                Self::new_yew_node(id, send_tx.clone()),
                             );
                         },
                         ServerSocketMessage::Close((id, reason)) => {
@@ -51,7 +51,7 @@ impl ActixApp {
                         },
                         ServerSocketMessage::Message((id, payload)) => {
                             log::info!("{id} 🔗 Message({:?})", payload);
-                            self.client_nodes[&id].callback().send(payload).unwrap();
+                            self.client_nodes[&id].reporter().emit(payload);
                         },
                     }
                 },     
@@ -63,12 +63,13 @@ impl ActixApp {
     fn new_yew_node(
         id: Uuid,
         send_tx: UnboundedSender<(Uuid, Payload)>,
-        broadcast_tx: UnboundedSender<Payload>,
     ) -> Root {
-        Processor::<Root>::new_node(
-            move |node: &Root, message, payload| {
-                handle(&id, &send_tx, &broadcast_tx, node, message, payload)
-            }
+        Root::new(
+            &Reporter::Callback(Arc::new(
+                move |payload| send_tx.send((id, payload)).unwrap()
+            )), 
+            vec![], 
+            None,
         )
     }
 }

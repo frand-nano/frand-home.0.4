@@ -1,7 +1,9 @@
+use std::sync::Arc;
+use bases::Reporter;
 use frand_node::*;
 use frand_web::yew::client_socket::{ClientSocket, SocketMessage};
-use yew::Html;
-use crate::app::root::{view, Root};
+use yew::{html, Html};
+use crate::app::root::{Root, RootView};
 
 pub struct YewApp {
     root: Root,
@@ -11,14 +13,15 @@ pub struct YewApp {
 impl YewApp {
     pub fn new(context: &yew::Context<Self>) -> Self {
         let callback = context.link().callback(
-            |message: Payload| SocketMessage::ToServer(message)
+            |payload| SocketMessage::ToServer(payload)
         );
 
+        context.props().set_reporter(&Reporter::Callback(Arc::new(
+            move |payload| callback.emit(payload)
+        )));
+
         Self {
-            root: Container::<Root>::new_node_with(
-                context.props(), 
-                move |payload| callback.emit(payload),
-            ),
+            root: context.props().clone(), 
             socket: ClientSocket::new(context),
         }        
     }
@@ -33,7 +36,9 @@ impl yew::Component for YewApp {
     }
 
     fn view(&self, _ctx: &yew::Context<Self>) -> Html {    
-        view(&self.root)
+        html! {
+            <RootView ..self.root.clone() />
+        }
     }
 
     fn update(&mut self, _ctx: &yew::Context<Self>, message: Self::Message) -> bool {

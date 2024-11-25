@@ -1,19 +1,14 @@
-use std::cell::Ref;
-use super::{message::{Payload, PayloadId}, state::StateBase, CallbackSender, ElementBase};
+use std::ops::Deref;
+use super::{message::{Payload, PayloadId}, state::StateBase, ElementBase, Emitter, Reporter};
 
-pub trait NodeBase: ElementBase + Emitter<Self::State> + Stater<Self::State> {   
+pub trait NodeBase: ElementBase + Deref<Target = Emitter> + Stater<Self::State> {   
     fn new(
-        callback: &CallbackSender,     
+        reporter: &Reporter,     
         key: Vec<PayloadId>,
         id: Option<PayloadId>,
     ) -> Self;
-}
 
-pub trait Emitter<S: StateBase> {
-    fn depth(&self) -> usize;
-    fn callback(&self) -> Ref<CallbackSender>;
-    fn set_callback(&self, callback: &CallbackSender);
-    fn emit(&self, state: S);
+    fn set_reporter(&self, reporter: &Reporter);
 }
 
 pub trait Stater<S: StateBase> {

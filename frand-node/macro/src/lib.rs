@@ -1,19 +1,14 @@
-use attrs::Attrs;
 use convert_case::{Case, Casing};
-use node_attrs::NodeAttrKeyItem;
 use proc_macro::TokenStream;
 use syn::*;
 
 mod node;
-mod node_attrs;
-mod attrs;
 
 #[proc_macro_attribute]
-pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let attrs = parse_macro_input!(attr as Attrs<NodeAttrKeyItem>);
+pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let state = parse_macro_input!(item as ItemStruct);
 
-    let node = node::expand(&attrs, &state)
+    let node = node::expand(&state)
     .unwrap_or_else(Error::into_compile_error);
     
     quote::quote! { 
@@ -23,7 +18,7 @@ pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn node_macro(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let node: proc_macro2::TokenStream = node(attr.clone(), item.clone()).into();
+    let node: proc_macro2::TokenStream = node(attr, item.clone()).into();
     let state = parse_macro_input!(item as ItemStruct);
 
     let macro_name = Ident::new(
