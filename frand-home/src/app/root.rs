@@ -1,10 +1,10 @@
+use yew::*;
 use frand_node::*;
 use frand_web::yew::client_socket::{ClientSocket, FromServerSocket};
-use yew::{html, Html};
 use super::{personal::Personal, shared::Shared};
 
 #[node]
-#[derive(yew::Properties)]
+#[derive(Properties)]
 pub struct Root {
     shared: Shared,
     personal: Personal,
@@ -19,11 +19,11 @@ impl From<FromServerSocket> for Message {
     fn from(value: FromServerSocket) -> Self { Self::FromServer(value.into()) }
 }
 
-impl yew::Component for Root {
+impl Component for Root {
     type Message = Message;
     type Properties = Self;
 
-    fn create(context: &yew::Context<Self>) -> Self {
+    fn create(context: &Context<Self>) -> Self {
         log::debug!("Root::create");
         let socket = ClientSocket::new(context);
 
@@ -39,7 +39,7 @@ impl yew::Component for Root {
         ).clone()
     }
 
-    fn view(&self, _ctx: &yew::Context<Self>) -> Html {    
+    fn view(&self, _ctx: &Context<Self>) -> Html {    
         log::debug!("Root::view");
         html! {
             <div>
@@ -49,7 +49,7 @@ impl yew::Component for Root {
         }
     }
 
-    fn update(&mut self, _ctx: &yew::Context<Self>, message: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, message: Self::Message) -> bool {
         match message {
             Message::FromServer(payload) => {
                 log::debug!("FromServer({:?})", payload);

@@ -2,35 +2,27 @@ use std::{ops::Deref, sync::Arc};
 use bases::{ElementBase, PayloadId};
 use crate::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Node<S: StateBase + MessageBase> {
-    emitter: Emitter<Self>,    
-    value: S,
+    emitter: Emitter<Self, S>,    
 }
 
 impl<S: StateBase + MessageBase> Clone for Node<S> {
     fn clone(&self) -> Self {
-        log::debug!("Node<S>::clone value:{:?}", self.value);
+        log::debug!("Node<S>::clone");
         Self { 
             emitter: self.emitter.clone(), 
-            value: self.value.clone(), 
         }
     }
 }
 
 impl<S: StateBase + MessageBase> Deref for Node<S> {
     type Target = S;
-    fn deref(&self) -> &Self::Target { &self.value }
+    fn deref(&self) -> &Self::Target { self.emitter.value() }
 }
 
 impl<S: StateBase + MessageBase> Default for Node<S> {
     fn default() -> Self { Self::new() }
-}
-
-impl<S: StateBase + MessageBase> PartialEq for Node<S> {
-    fn eq(&self, other: &Self) -> bool {
-        self.value == other.value
-    }
 }
 
 impl<S: StateBase + MessageBase> ElementBase for Node<S> {
@@ -48,7 +40,6 @@ impl<S: StateBase + MessageBase> NodeBase for Node<S> {
 
         Self { 
             emitter: Emitter::new(key),
-            value: S::default(), 
         }
     }  
 
@@ -99,7 +90,7 @@ impl<S: StateBase + MessageBase> NodeBase for Node<S> {
 
 impl<S: StateBase + MessageBase> Stater<S> for Node<S> {  
     fn apply(&mut self, state: S) {
-        self.value = state;
+        *self.emitter.value_mut() = state;
     }
 
     fn apply_payload(&mut self, payload: &Payload) {

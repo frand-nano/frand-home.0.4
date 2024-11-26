@@ -52,7 +52,7 @@ pub fn expand(
     let node = quote! {
         #[allow(dead_code)]
         #(#node_attrs)*
-        #[derive(Debug)]
+        #[derive(Debug, PartialEq)]
         pub struct #node_name {
             emitter: #mp::Emitter<#node_name>,     
             #(pub #names: #node_tys,)*
@@ -85,13 +85,6 @@ pub fn expand(
 
         impl Default for #node_name {
             fn default() -> Self { Self::new() }
-        }
-
-        impl PartialEq for #node_name {
-            fn eq(&self, other: &Self) -> bool {
-                true 
-                #(&& self.#names == other.#names)*
-            }
         }
 
         impl #mp::ElementBase for #node_name {

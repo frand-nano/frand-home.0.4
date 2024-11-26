@@ -1,50 +1,62 @@
-use std::{cell::RefCell, fmt::Debug, sync::Arc};
+use std::{cell::OnceCell, fmt::Debug, sync::Arc};
 use bases::{PayloadId, PayloadKey};
 use crate::*;
 
-pub struct Emitter<N: NodeBase> {
+pub struct Emitter<N: NodeBase, V: StateBase = ()> {
     depth: usize,
     key: PayloadKey,
-    callback: RefCell<Option<Arc<dyn Fn(Payload)>>>,    
-    process: RefCell<Option<fn(&N, &Payload, N::Message)>>,    
+    value: V,
+    callback: OnceCell<Arc<dyn Fn(Payload)>>,    
+    process: OnceCell<fn(&N, &Payload, N::Message)>,    
 }
 
-impl<N: NodeBase + Clone> Clone for Emitter<N> {
+impl<N: NodeBase + Clone, V: StateBase> PartialEq for Emitter<N, V> {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+
+impl<N: NodeBase + Clone, V: StateBase> Clone for Emitter<N, V> {
     fn clone(&self) -> Self {
-        log::debug!("Emitter<N>::clone {:?}", self.key);
+        log::debug!("Emitter<N>::clone key:{:?}, value:{:?}", self.key, self.value);
         Self { 
             depth: self.depth.clone(), 
             key: self.key.clone(), 
+            value: self.value.clone(),
             callback: self.callback.clone(), 
             process: self.process.clone(), 
         }
     }
 }
 
-impl<N: NodeBase> Debug for Emitter<N> {
+impl<N: NodeBase, V: StateBase> Debug for Emitter<N, V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Emitter")
         .field("depth", &self.depth)
         .field("key", &self.key)
-        .field("callback", &"RefCell<Option<Arc<dyn Fn(Payload)>>>")
-        .field("process", &"RefCell<Option<fn(&N, Payload, N::Message)>>")
+        .field("value", &self.value)
+        .field("callback", &"OnceCell<Option<Arc<dyn Fn(Payload)>>>")
+        .field("process", &"OnceCell<Option<fn(&N, Payload, N::Message)>>")
         .finish()
     }
 }
 
-impl<N: NodeBase> Default for Emitter<N> {
+impl<N: NodeBase, V: StateBase> Default for Emitter<N, V> {
     fn default() -> Self {
         Self { 
             depth: Default::default(), 
             key: Default::default(), 
-            callback: RefCell::new(None),
-            process: RefCell::new(None),
+            value: Default::default(), 
+            callback: OnceCell::new(),
+            process: OnceCell::new(),
         }
     }
 }
 
-impl<N: NodeBase> Emitter<N> {
+impl<N: NodeBase, V: StateBase> Emitter<N, V> {
     pub fn depth(&self) -> usize { self.depth }
+    pub fn value(&self) -> &V { &self.value }
+    pub fn value_mut(&mut self) -> &mut V { &mut self.value }
 
     pub fn new(
         key: Vec<PayloadId>,
@@ -52,45 +64,27 @@ impl<N: NodeBase> Emitter<N> {
         log::debug!("Emitter<N>::new {:?}", key);
         Self { 
             depth: key.len(),
-            key: key.into_boxed_slice(),            
-            callback: RefCell::new(None),
-            process: RefCell::new(None),      
+            key: key.into_boxed_slice(),   
+            value: V::default(),            
+            callback: OnceCell::new(),
+            process: OnceCell::new(),      
         }
     }  
 
-    pub fn overwrite_callback(&self, callback: Arc<dyn Fn(Payload)>) {
-        *self.callback.borrow_mut() = Some(callback);
-    }
-
-    pub fn set_callback(&self, callback: Arc<dyn Fn(Payload)>) {
-        if self.callback.borrow().is_some() {
-            panic!("
-                Calling set_callback multiple times is not allowed. 
-                Instead, use overwrite_callback.
-                If you have called activate, use fork or inject instead.
-            ");
-        } else {
-            *self.callback.borrow_mut() = Some(callback);
+    pub fn set_callback(&self, callback: Arc<dyn Fn(Payload)>) {        
+        if let Err(_) = self.callback.set(callback) {
+            panic!("Calling set_callback multiple times is not allowed.");
         }
     }
 
-    pub fn overwrite_process(&self, process: fn(&N, &Payload, N::Message)) {
-        *self.process.borrow_mut() = Some(process);
-    }
-
     pub fn set_process(&self, process: fn(&N, &Payload, N::Message)) {
-        if self.process.borrow().is_some() {
-            panic!("
-                Calling set_process multiple times is not allowed. 
-                Instead, use overwrite_process.
-            ");
-        } else {
-            *self.process.borrow_mut() = Some(process);
+        if let Err(err) = self.process.set(process) {
+            panic!("Calling set_process multiple times is not allowed. Err({:#?})", err);
         }
     }
 
     pub fn call_process(&self, node: &N, depth: usize, payload: &Payload) {
-        if let Some(process) = self.process.borrow().as_ref() {
+        if let Some(process) = self.process.get() {
             let message = N::Message::from_payload(depth, payload);
             (process)(node, payload, message);
         }
@@ -101,7 +95,7 @@ impl<N: NodeBase> Emitter<N> {
     }
 
     pub fn emit_payload(&self, payload: Payload) {
-        if let Some(callback) = self.callback.borrow().as_ref() {
+        if let Some(callback) = self.callback.get() {
             (callback)(payload);
         }
     }
