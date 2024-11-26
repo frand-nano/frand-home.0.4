@@ -52,7 +52,7 @@ pub fn expand(
     let node = quote! {
         #[allow(dead_code)]
         #(#node_attrs)*
-        #[derive(Debug, Clone)]
+        #[derive(Debug)]
         pub struct #node_name {
             emitter: #mp::Emitter<#node_name>,     
             #(pub #names: #node_tys,)*
@@ -73,6 +73,16 @@ pub fn expand(
     };
 
     let node_impl = quote! {
+        impl Clone for #node_name {
+            fn clone(&self) -> Self {
+                log::debug!("{}::clone", stringify!(#node_name));
+                Self { 
+                    emitter: self.emitter.clone(),  
+                    #(#names: self.#names.clone(),)*
+                }
+            }
+        }
+
         impl Default for #node_name {
             fn default() -> Self { Self::new() }
         }
@@ -107,9 +117,15 @@ pub fn expand(
                 self.emitter.emit(state);
             }
 
-            fn emit_payload(&self, payload: Payload) {
-                self.emitter.emit_payload(payload);
-            }
+            fn emit_payload(&self, payload: #mp::Payload) {
+                let depth = self.emitter.depth();
+                match payload.get_id(depth) {
+                    #(Some(#indexes) => Ok(self.#names.emit_payload(payload)),)*
+                    Some(_) => Err(payload.error(depth, "unknown id")),
+                    None => Ok(self.emitter.emit_payload(payload)),
+                }     
+                .unwrap_or_else(|err| panic!("{}::emit_payload() deserialize Err({err})", stringify!(#node_name)));
+            }    
 
             fn set_callback<F>(&self, callback: &#mp::Arc<F>)  
             where F: 'static + Fn(#mp::Payload) {
@@ -130,35 +146,39 @@ pub fn expand(
                 result
             }
         
-            fn inject(&self, process: fn(&Self, #mp::Payload, Self::Message)) -> &Self {
+            fn inject(&self, process: fn(&Self, &#mp::Payload, Self::Message)) -> &Self {
                 self.emitter.set_process(process);
                 self
             }
         
-            fn to_message(&self, payload: &#mp::Payload) -> Self::Message {
-                let depth = payload.key().len();
+            fn call_process(&self, depth: usize, payload: &Payload) {
                 match payload.get_id(depth) {
+                    #(Some(#indexes) => {
+                        self.#names.call_process(depth + 1, payload);
+                        self.emitter.call_process(self, depth, payload);
+                        Ok(())
+                    },)*
                     Some(_) => Err(payload.error(depth, "unknown id")),
-                    None => Ok(Self::Message::State(payload.read_state())),
+                    None => Ok(self.emitter.call_process(self, depth, payload)),
                 }     
-                .unwrap_or_else(|err| panic!("{}::to_message() Err({err})", stringify!(#node_name)))
+                .unwrap_or_else(|err| panic!("{}::call_process() Err({err})", stringify!(#node_name)))
             }
         }
 
         impl #mp::Stater<State> for #node_name {    
-            fn apply(&mut self, payload: &#mp::Payload) {
+            fn apply(&mut self, state: State) {
+                #(self.#names.apply(state.#names);)*
+            }
+
+            fn apply_payload(&mut self, payload: &#mp::Payload) {
                 let depth = self.emitter.depth();
                 match payload.get_id(depth) {
-                    #(Some(#indexes) => Ok(self.#names.apply(payload)),)*
+                    #(Some(#indexes) => Ok(self.#names.apply_payload(payload)),)*
                     Some(_) => Err(payload.error(depth, "unknown id")),
-                    None => Ok(self.apply_state(payload.read_state())),
+                    None => Ok(self.apply(payload.read_state())),
                 }     
-                .unwrap_or_else(|err| panic!("{}::apply() deserialize Err({err})", stringify!(#node_name)));
-            }
-        
-            fn apply_state(&mut self, state: State) {
-                #(self.#names.apply_state(state.#names);)*
-            }
+                .unwrap_or_else(|err| panic!("{}::apply_payload() deserialize Err({err})", stringify!(#node_name)));
+            }        
         }
     };
 
@@ -191,7 +211,7 @@ pub fn expand(
         }
 
         impl #mp::MessageBase for Message {
-            fn from_payload(depth: usize, payload: #mp::Payload) -> Self {
+            fn from_payload(depth: usize, payload: &#mp::Payload) -> Self {
                 match payload.get_id(depth) {
                     #(Some(#indexes) => Ok(Message::#names(#message_tys::from_payload(depth + 1, payload))),)*
                     Some(_) => Err(payload.error(depth, "unknown id")),

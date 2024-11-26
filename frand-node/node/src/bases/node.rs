@@ -28,14 +28,14 @@ pub trait NodeBase: ElementBase + Stater<Self::State> {
     fn fork<F>(&self, callback: F) -> Self 
     where F: 'static + Fn(Payload);
 
-    fn inject(&self, process: fn(&Self, Payload, Self::Message)) -> &Self;
+    fn inject(&self, process: fn(&Self, &Payload, Self::Message)) -> &Self;
 
-    fn to_message(&self, payload: &Payload) -> Self::Message;
+    fn call_process(&self, depth: usize, payload: &Payload);
 }
 
 pub trait Stater<S: StateBase> {
-    fn apply(&mut self, payload: &Payload);
-    fn apply_state(&mut self, state: S);
+    fn apply(&mut self, state: S);
+    fn apply_payload(&mut self, payload: &Payload);
 
     fn apply_payloads<I>(&mut self, payloads: I) 
     where 
@@ -43,7 +43,7 @@ pub trait Stater<S: StateBase> {
         I::Item: AsRef<Payload>,
     {
         for payload in payloads {
-            self.apply(payload.as_ref());
+            self.apply_payload(payload.as_ref());
         }
     }
 }

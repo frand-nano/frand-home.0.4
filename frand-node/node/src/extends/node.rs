@@ -1,15 +1,26 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 use bases::{ElementBase, PayloadId};
 use crate::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Node<S: StateBase + MessageBase> {
     emitter: Emitter<Self>,    
     value: S,
 }
 
-impl<S: StateBase + MessageBase> Node<S> {
-    pub fn value(&self) -> &S { &self.value }
+impl<S: StateBase + MessageBase> Clone for Node<S> {
+    fn clone(&self) -> Self {
+        log::debug!("Node<S>::clone value:{:?}", self.value);
+        Self { 
+            emitter: self.emitter.clone(), 
+            value: self.value.clone(), 
+        }
+    }
+}
+
+impl<S: StateBase + MessageBase> Deref for Node<S> {
+    type Target = S;
+    fn deref(&self) -> &Self::Target { &self.value }
 }
 
 impl<S: StateBase + MessageBase> Default for Node<S> {
@@ -46,7 +57,12 @@ impl<S: StateBase + MessageBase> NodeBase for Node<S> {
     }
 
     fn emit_payload(&self, payload: Payload) {
-        self.emitter.emit_payload(payload);
+        let depth = self.emitter.depth();
+        match payload.get_id(depth) {
+            Some(_) => Err(payload.error(depth, "unknown id")),
+            None => Ok(self.emitter.emit_payload(payload)),
+        }
+        .unwrap_or_else(|err| panic!("Node<S>::emit_payload() deserialize Err({err})"));
     }
 
     fn set_callback<F>(&self, callback: &Arc<F>)  
@@ -67,32 +83,31 @@ impl<S: StateBase + MessageBase> NodeBase for Node<S> {
         result
     }
 
-    fn inject(&self, process: fn(&Self, Payload, Self::Message)) -> &Self {
+    fn inject(&self, process: fn(&Self, &Payload, Self::Message)) -> &Self {
         self.emitter.set_process(process);
         self
     }
 
-    fn to_message(&self, payload: &Payload) -> Self::Message {
-        let depth = payload.key().len();
+    fn call_process(&self, depth: usize, payload: &Payload) {
         match payload.get_id(depth) {
             Some(_) => Err(payload.error(depth, "unknown id")),
-            None => Ok(payload.read_state::<S>()),
+            None => Ok(self.emitter.call_process(self, depth, payload)),
         }     
-        .unwrap_or_else(|err| panic!("{}::to_message() Err({err})", stringify!(Node<S>)))
+        .unwrap_or_else(|err| panic!("{}::call_process() Err({err})", stringify!(Node<S>)))
     }
 }
 
-impl<S: StateBase + MessageBase> Stater<S> for Node<S> {    
-    fn apply(&mut self, payload: &Payload) {
+impl<S: StateBase + MessageBase> Stater<S> for Node<S> {  
+    fn apply(&mut self, state: S) {
+        self.value = state;
+    }
+
+    fn apply_payload(&mut self, payload: &Payload) {
         let depth = self.emitter.depth();
         match payload.get_id(depth) {
             Some(_) => Err(payload.error(depth, "unknown id")),
-            None => Ok(self.apply_state(payload.read_state())),
+            None => Ok(self.apply(payload.read_state())),
         }
-        .unwrap_or_else(|err| panic!("Node<S>::apply() deserialize Err({err})"));
-    }
-
-    fn apply_state(&mut self, state: S) {
-        self.value = state;
+        .unwrap_or_else(|err| panic!("Node<S>::apply_payload() deserialize Err({err})"));
     }
 }

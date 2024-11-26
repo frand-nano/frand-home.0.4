@@ -103,7 +103,7 @@ impl ServerSocketConnection {
                 },
                 Some(message) = outbound_rx.recv() => {
                     let message: Payload = message;
-                    let data: Vec<u8> = message.try_into()?;
+                    let data: Vec<u8> = (&message).try_into()?;
                     session.binary(Bytes::copy_from_slice(data.as_slice())).await?;
                 },
                 else => { break; },
@@ -119,7 +119,7 @@ impl ServerSocketConnection {
 
     pub fn send(&self, message: Payload) {
         if let Err(err) = self.outbound_tx.send(message) {
-            log::info!("A closed ServerSocketConnection might not have been removed from the list. -> Err({err})")
+            log::error!("A closed ServerSocketConnection might not have been removed from the list. -> Err({err})")
         }
     }
 }

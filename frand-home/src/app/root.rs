@@ -1,14 +1,70 @@
 use frand_node::*;
+use frand_web::yew::client_socket::{ClientSocket, FromServerSocket};
 use yew::{html, Html};
 use super::{personal::Personal, shared::Shared};
 
 #[node]
 #[derive(yew::Properties)]
 pub struct Root {
-    pub shared: Shared,
-    pub personal: Personal,
+    shared: Shared,
+    personal: Personal,
 }
 
+pub enum Message {
+    FromServer(Payload),
+    FromNode(Payload),
+}
+
+impl From<FromServerSocket> for Message {
+    fn from(value: FromServerSocket) -> Self { Self::FromServer(value.into()) }
+}
+
+impl yew::Component for Root {
+    type Message = Message;
+    type Properties = Self;
+
+    fn create(context: &yew::Context<Self>) -> Self {
+        log::debug!("Root::create");
+        let socket = ClientSocket::new(context);
+
+        let callback = context.link().callback(
+            move |payload| {
+                socket.send(&payload);
+                Message::FromNode(payload)
+            }
+        );
+
+        context.props().activate(
+            move |payload| callback.emit(payload)
+        ).clone()
+    }
+
+    fn view(&self, _ctx: &yew::Context<Self>) -> Html {    
+        log::debug!("Root::view");
+        html! {
+            <div>
+                <Shared ..self.shared.clone() />
+                <Personal ..self.personal.clone() />                
+            </div>
+        }
+    }
+
+    fn update(&mut self, _ctx: &yew::Context<Self>, message: Self::Message) -> bool {
+        match message {
+            Message::FromServer(payload) => {
+                log::debug!("FromServer({:?})", payload);
+                self.apply_payload(&payload);
+                true
+            },
+            Message::FromNode(payload) => {
+                log::debug!("FromNode({:?})", payload);
+                false
+            },
+        }
+    }
+}
+
+/*
 #[cfg(not(target_arch = "wasm32"))]
 pub mod backend {
     use frand_node::*;
@@ -65,56 +121,4 @@ pub mod backend {
         }
     }
 }
-
-#[yew::function_component]
-pub fn RootView(root: &Root) -> Html {
-    let add1 = |node: Node<i32>| {
-        (
-            *node.value(),
-            move |_| node.emit(node.value() + 1), 
-        )
-    };
-
-    let sn1 = (add1)(root.shared.number1.clone());
-    let sn2 = (add1)(root.shared.number2.clone());
-    let sn3 = (add1)(root.shared.number3.clone());
-    let sn4 = (add1)(root.shared.number4.clone());
-
-    let cn1 = (add1)(root.personal.number1.clone());
-    let cn2 = (add1)(root.personal.number2.clone());
-    let cn3 = (add1)(root.personal.number3.clone());
-    let cn4 = (add1)(root.personal.number4.clone());
-
-    html! {
-        <div>
-            <div>
-                <button onclick = {sn1.1}>
-                    { format!("sn1 : {} + 1", sn1.0) }
-                </button>
-                <button onclick = {sn2.1}>
-                    { format!("sn2 : {} + 1", sn2.0) }
-                </button>
-                <button onclick = {sn3.1}>
-                    { format!("sn3 : {} + 1", sn3.0) }
-                </button>
-                <button onclick = {sn4.1}>
-                    { format!("sn4 : {} + 1", sn4.0) }
-                </button>
-            </div>
-            <div>
-                <button onclick = {cn1.1}>
-                    { format!("cn1 : {} + 1", cn1.0) }
-                </button>
-                <button onclick = {cn2.1}>
-                    { format!("cn2 : {} + 1", cn2.0) }
-                </button>
-                <button onclick = {cn3.1}>
-                    { format!("cn3 : {} + 1", cn3.0) }
-                </button>
-                <button onclick = {cn4.1}>
-                    { format!("cn4 : {} + 1", cn4.0) }
-                </button>
-            </div>
-        </div>
-    }
-}
+*/

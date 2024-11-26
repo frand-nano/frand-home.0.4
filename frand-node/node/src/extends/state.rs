@@ -24,7 +24,7 @@ macro_rules! impl_state_for {
             impl frand_node::macro_prelude::MessageBase for $tys {
                 fn from_payload(
                     depth: usize,
-                    payload: frand_node::macro_prelude::Payload,
+                    payload: &frand_node::macro_prelude::Payload,
                 ) -> Self {
                     match payload.get_id(depth) {
                         Some(_) => Err(payload.error(depth, "unknown id")),

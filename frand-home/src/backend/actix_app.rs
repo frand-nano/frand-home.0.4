@@ -27,12 +27,12 @@ impl ActixApp {
         spawn_local(async move {
             loop { select! {
                 Some((id, payload)) = send_rx.recv() => {
-                    self.client_nodes.get_mut(&id).unwrap().apply(&payload);
+                    self.client_nodes.get_mut(&id).unwrap().apply_payload(&payload);
                     self.server_socket.send(&id, payload);
                 },
                 Some(payload) = broadcast_rx.recv() => {
                     for node in self.client_nodes.values_mut() {
-                        node.apply(&payload);
+                        node.apply_payload(&payload);
                     }
                     self.server_socket.broadcast(payload);
                 },

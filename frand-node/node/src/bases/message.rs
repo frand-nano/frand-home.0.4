@@ -9,7 +9,7 @@ pub type PayloadKey = Box<[PayloadId]>;
 pub type PayloadDepth = u32;
 
 pub trait MessageBase: Debug + Clone + Sized {
-    fn from_payload(depth: usize, payload: Payload) -> Self;
+    fn from_payload(depth: usize, payload: &Payload) -> Self;
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -67,13 +67,13 @@ impl Payload {
     }
 }
 
-impl TryFrom<Payload> for Vec<u8> {    
+impl TryFrom<&Payload> for Vec<u8> {    
     type Error = NodeError;
 
-    fn try_from(payload: Payload) -> Result<Self> {        
+    fn try_from(payload: &Payload) -> Result<Self> {        
         let mut buffer = Vec::new();
 
-        match ciborium::into_writer(&payload, &mut buffer) {
+        match ciborium::into_writer(payload, &mut buffer) {
             Ok(()) => Ok(buffer),
             Err(err) => Err(payload.error(0, err.to_string())),
         }
@@ -95,11 +95,11 @@ impl From<anyhow::Result<Vec<u8>>> for Payload {
     }
 }
 
-impl TryFrom<Payload> for String 
+impl TryFrom<&Payload> for String 
 {    
     type Error = NodeError;
 
-    fn try_from(payload: Payload) -> Result<Self> {       
+    fn try_from(payload: &Payload) -> Result<Self> {       
         Ok(String::from_utf8(payload.try_into()?)?)
     }
 }

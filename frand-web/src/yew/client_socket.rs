@@ -1,21 +1,11 @@
-use std::ops::Deref;
 use frand_node::Payload;
 use yew::{Component, Context};
 use yew_websocket::websocket::{WebSocketService, WebSocketStatus, WebSocketTask};
 
-pub enum SocketMessage {
-    ToServer(Payload),
-    FromServer(Payload),
-}
+pub struct FromServerSocket(Payload);
 
-impl Deref for SocketMessage {
-    type Target = Payload;
-    fn deref(&self) -> &Self::Target {
-        match self {
-            SocketMessage::ToServer(message) => message,
-            SocketMessage::FromServer(message) => message,
-        }
-    }
+impl Into<Payload> for FromServerSocket {
+    fn into(self) -> Payload { self.0 }
 }
 
 pub struct ClientSocket {
@@ -24,10 +14,10 @@ pub struct ClientSocket {
 
 impl ClientSocket {
     pub fn new<C: Component>(context: &Context<C>) -> Self 
-    where <C as Component>::Message: From<SocketMessage> 
+    where <C as Component>::Message: From<FromServerSocket> 
     {
         let callback = context.link().callback(
-            |message| SocketMessage::FromServer(message)
+            |payload| FromServerSocket(payload)
         );
 
         let notification = context.link().batch_callback(
@@ -57,8 +47,8 @@ impl ClientSocket {
         }
     }
 
-    pub fn send(&mut self, message: Payload) {
-        if let Some(outbound_tx) = &mut self.outbound_tx {
+    pub fn send(&self, message: &Payload) {
+        if let Some(outbound_tx) = &self.outbound_tx {
             outbound_tx.send_binary(message.try_into().unwrap())
         }              
     }

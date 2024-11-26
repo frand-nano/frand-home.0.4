@@ -30,9 +30,9 @@ impl<N: 'static + NodeBase> Processor<N>
             if !self.handled_messages.contains(payload.key()) {
                 self.handled_messages.insert(payload.key().clone());
 
-                self.node.apply(&payload);
+                self.node.apply_payload(&payload);
                 
-                let message = N::Message::from_payload(0, payload.clone());
+                let message = N::Message::from_payload(0, &payload);
                 (update)(&self.node, message, payload);
             }
             match self.node_rx.try_recv() {
