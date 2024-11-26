@@ -1,6 +1,6 @@
 use yew::*;
 use frand_node::*;
-use crate::app::view::IncButton;
+use crate::app::view::{IncButton, IncButtonView};
 
 #[node_macro]
 #[derive(Properties)]
@@ -13,24 +13,15 @@ pub struct Personal {
 
 personal_macro!{}
 
-impl Component for Personal {
-    type Message = ();
-    type Properties = Self;
-
-    fn create(context: &Context<Self>) -> Self {
-        log::debug!("Personal::create");
-        context.props().clone()
-    }
-
-    fn view(&self, _: &Context<Self>) -> Html {     
-        log::debug!("Personal::view");   
-        html! {
-            <div>
-                <IncButton ..self.number1.clone().into() />
-                <IncButton ..self.number2.clone().into() />
-                <IncButton ..self.number3.clone().into() />
-                <IncButton ..self.number4.clone().into() />
-            </div>
-        }
+#[function_component]
+pub fn PersonalView(personal: &Personal) -> Html {
+    log::debug!("Personal::view");   
+    html! {
+        <div>
+            <IncButtonView ..IncButton { number: personal.number1.clone() } />
+            <IncButtonView ..IncButton { number: personal.number2.clone() } />
+            <IncButtonView ..IncButton { number: personal.number3.clone() } />
+            <IncButtonView ..IncButton { number: personal.number4.clone() } />
+        </div>
     }
 }

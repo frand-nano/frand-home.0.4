@@ -3,10 +3,10 @@ use frand_node::*;
 use frand_web::actix::server_socket::{ServerSocket, ServerSocketMessage};
 use tokio::{select, sync::mpsc::{unbounded_channel, UnboundedSender}, task::spawn_local};
 use uuid::Uuid;
-use crate::app::root::Root;
+use crate::app::app::App;
 
 pub struct ActixApp {
-    client_nodes: HashMap<Uuid, Root>,
+    client_nodes: HashMap<Uuid, App>,
     server_socket: ServerSocket,
 }
 
@@ -63,8 +63,8 @@ impl ActixApp {
     fn new_yew_node(
         id: Uuid,
         send_tx: UnboundedSender<(Uuid, Payload)>,
-    ) -> Root {
-        Root::new_activate(
+    ) -> App {
+        App::new_activate(
             move |payload| send_tx.send((id, payload)).unwrap()
         )
     }

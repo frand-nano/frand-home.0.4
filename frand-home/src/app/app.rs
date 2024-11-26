@@ -1,11 +1,12 @@
 use yew::*;
 use frand_node::*;
 use frand_web::yew::client_socket::{ClientSocket, FromServerSocket};
+use crate::app::{personal::PersonalView, shared::SharedView};
 use super::{personal::Personal, shared::Shared};
 
 #[node]
 #[derive(Properties)]
-pub struct Root {
+pub struct App {
     shared: Shared,
     personal: Personal,
 }
@@ -19,12 +20,12 @@ impl From<FromServerSocket> for Message {
     fn from(value: FromServerSocket) -> Self { Self::FromServer(value.into()) }
 }
 
-impl Component for Root {
+impl Component for App {
     type Message = Message;
     type Properties = Self;
 
     fn create(context: &Context<Self>) -> Self {
-        log::debug!("Root::create");
+        log::debug!("App::create");
         let socket = ClientSocket::new(context);
 
         let callback = context.link().callback(
@@ -40,11 +41,11 @@ impl Component for Root {
     }
 
     fn view(&self, _ctx: &Context<Self>) -> Html {    
-        log::debug!("Root::view");
+        log::debug!("App::view");
         html! {
             <div>
-                <Shared ..self.shared.clone() />
-                <Personal ..self.personal.clone() />                
+                <SharedView ..self.shared.clone() />
+                <PersonalView ..self.personal.clone() />                
             </div>
         }
     }
@@ -71,17 +72,17 @@ pub mod backend {
     use uuid::Uuid;
     use tokio::sync::mpsc::UnboundedSender;
     use crate::app::{personal::PersonalMessage, shared::SharedMessage};
-    use super::{Root, RootMessage, RootMod};
+    use super::{App, AppMessage, AppMod};
 
     pub fn handle(
         id: &Uuid,
         send_tx: &UnboundedSender<(Uuid, Payload)>,
         broadcast_tx: &UnboundedSender<Payload>,
-        node: &Root, 
-        message: RootMod::Message, 
+        node: &App, 
+        message: AppMod::Message, 
         payload: Payload,
     ) {
-        use RootMessage::*;
+        use AppMessage::*;
         match message {
             shared(message) => {
                 use SharedMessage::*;
