@@ -1,36 +1,49 @@
-use std::{ops::Deref, sync::Arc};
-use super::{message::{Payload, PayloadId}, state::StateBase, ElementBase, Emitter, Reporter};
+use std::sync::Arc;
+use super::{message::{Payload, PayloadId}, state::StateBase, ElementBase};
 
-pub trait NodeBase: ElementBase + Deref<Target = Emitter> + Stater<Self::State> {   
-    fn new<F>(callback: F) -> Self 
-    where F: 'static + Fn(Payload)
-    { 
-        Self::new_child(Reporter::Callback(Arc::new(callback)), vec![], None) 
-    }
+pub trait NodeBase: ElementBase + Stater<Self::State> {   
+    fn new() -> Self { Self::new_child(vec![], None) }
 
-    fn new_child(
-        reporter: Reporter,     
+    fn new_child(  
         key: Vec<PayloadId>,
         id: Option<PayloadId>,
     ) -> Self;
 
-    fn set_callback<F>(&self, callback: F) -> &Self 
+    fn new_activate<F>(callback: F) -> Self
+    where F: 'static + Fn(Payload) {
+        let result = Self::new();
+        result.activate(callback);
+        result
+    }
+
+    fn emit(&self, state: Self::State);
+    fn emit_payload(&self, payload: Payload);
+
+    fn set_callback<F>(&self, callback: &Arc<F>)  
     where F: 'static + Fn(Payload);
 
-    fn set_reporter(&self, reporter: Reporter) -> &Self;
+    fn activate<F>(&self, callback: F) -> &Self 
+    where F: 'static + Fn(Payload);
+
+    fn fork<F>(&self, callback: F) -> Self 
+    where F: 'static + Fn(Payload);
+
+    fn inject(&self, process: fn(&Self, Payload, Self::Message)) -> &Self;
+
+    fn to_message(&self, payload: &Payload) -> Self::Message;
 }
 
 pub trait Stater<S: StateBase> {
-    fn apply(&mut self, message: &Payload);
+    fn apply(&mut self, payload: &Payload);
     fn apply_state(&mut self, state: S);
 
-    fn apply_messages<I>(&mut self, messages: I) 
+    fn apply_payloads<I>(&mut self, payloads: I) 
     where 
         I: Iterator<Item = Payload>,
         I::Item: AsRef<Payload>,
     {
-        for message in messages {
-            self.apply(message.as_ref());
+        for payload in payloads {
+            self.apply(payload.as_ref());
         }
     }
 }

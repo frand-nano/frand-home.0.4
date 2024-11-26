@@ -15,7 +15,9 @@ impl YewApp {
         );
 
         Self {
-            root: context.props().set_callback(move |payload| callback.emit(payload)).clone(), 
+            root: context.props().activate(
+                move |payload| callback.emit(payload)
+            ).clone(), 
             socket: ClientSocket::new(context),
         }        
     }

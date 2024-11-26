@@ -12,7 +12,7 @@ pub trait MessageBase: Debug + Clone + Sized {
     fn from_payload(depth: usize, payload: Payload) -> Self;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Payload {
     key: PayloadKey,
     state: Box<[u8]>,
@@ -22,28 +22,24 @@ impl Payload {
     pub fn key(&self) -> &PayloadKey { &self.key }
 
     pub fn new<S: StateBase>(
-        key: &PayloadKey, 
-        id: Option<PayloadId>, 
+        key: PayloadKey, 
         state: S,
     ) -> Self {
-        let mut key = key.to_vec();
+        Self { 
+            key, 
+            state: Self::serialize(state), 
+        }
+    }
 
-        if let Some(id) = id { key.push(id); }
-
+    pub fn serialize<S: StateBase>(state: S) -> Box<[u8]>{
         let mut buffer = Vec::new();
-        let mut result = Self { 
-            key: key.into_boxed_slice(), 
-            state: Default::default(), 
-        };
 
         ciborium::into_writer(&state, &mut buffer)
         .unwrap_or_else(|err| 
             panic!("serialize {:#?} into CBOR -> Err({err})", state)
         );
 
-        result.state = buffer.into_boxed_slice();
-
-        result
+        buffer.into_boxed_slice()
     }
 
     pub fn read_state<S: StateBase>(&self) -> S {

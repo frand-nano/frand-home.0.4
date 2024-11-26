@@ -24,6 +24,6 @@ pub mod macro_prelude {
     pub use crate::{
         prelude::*,
         result::{Result, NodeError},
-        bases::{PayloadId, PayloadKey, Reporter},
+        bases::{PayloadId, PayloadKey},
     };
 }

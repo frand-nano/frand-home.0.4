@@ -54,7 +54,7 @@ pub fn expand(
         #(#node_attrs)*
         #[derive(Debug, Clone)]
         pub struct #node_name {
-            emitter: #mp::Emitter,     
+            emitter: #mp::Emitter<#node_name>,     
             #(pub #names: #node_tys,)*
         }
     };
@@ -73,13 +73,8 @@ pub fn expand(
     };
 
     let node_impl = quote! {
-        impl #mp::Deref for #node_name {
-            type Target = #mp::Emitter;
-            fn deref(&self) -> &Self::Target { &self.emitter }
-        }
-
         impl Default for #node_name {
-            fn default() -> Self { Self::new(|_| ()) }
+            fn default() -> Self { Self::new() }
         }
 
         impl PartialEq for #node_name {
@@ -97,36 +92,62 @@ pub fn expand(
         
         impl #mp::NodeBase for #node_name {
             fn new_child(
-                reporter: #mp::Reporter,   
                 mut key: Vec<#mp::PayloadId>,
                 id: Option<#mp::PayloadId>,  
             ) -> Self {
                 if let Some(id) = id { key.push(id); }
 
                 Self { 
-                    #(#names: #node_tys::new_child(reporter.clone(), key.clone(), Some(#indexes)),)*
-                    emitter: #mp::Emitter::new(reporter, key),
+                    #(#names: #node_tys::new_child(key.clone(), Some(#indexes)),)*
+                    emitter: #mp::Emitter::new(key),
                 }
-            }
-        
-            fn set_callback<F>(&self, callback: F) -> &Self  
-            where F: 'static + Fn(Payload)
-            {
-                self.set_reporter(#mp::Reporter::Callback(#mp::Arc::new(callback)));
-                self
+            }        
+
+            fn emit(&self, state: Self::State) {
+                self.emitter.emit(state);
             }
 
-            fn set_reporter(&self, reporter: #mp::Reporter) -> &Self {
-                use #mp::{Deref, BorrowMut};
-                #(self.#names.set_reporter(reporter.clone());)*   
-                self.deref().borrow_mut().set_reporter(reporter);
+            fn emit_payload(&self, payload: Payload) {
+                self.emitter.emit_payload(payload);
+            }
+
+            fn set_callback<F>(&self, callback: &#mp::Arc<F>)  
+            where F: 'static + Fn(#mp::Payload) {
+                #(self.#names.set_callback(callback);)*   
+                self.emitter.set_callback(callback.clone());
+            }
+
+            fn activate<F>(&self, callback: F) -> &Self 
+            where F: 'static + Fn(#mp::Payload) {
+                self.set_callback(&#mp::Arc::new(callback));
                 self
+            }
+        
+            fn fork<F>(&self, callback: F) -> Self 
+            where F: 'static + Fn(#mp::Payload) {
+                let result = self.clone();
+                result.set_callback(&#mp::Arc::new(callback));        
+                result
+            }
+        
+            fn inject(&self, process: fn(&Self, #mp::Payload, Self::Message)) -> &Self {
+                self.emitter.set_process(process);
+                self
+            }
+        
+            fn to_message(&self, payload: &#mp::Payload) -> Self::Message {
+                let depth = payload.key().len();
+                match payload.get_id(depth) {
+                    Some(_) => Err(payload.error(depth, "unknown id")),
+                    None => Ok(Self::Message::State(payload.read_state())),
+                }     
+                .unwrap_or_else(|err| panic!("{}::to_message() Err({err})", stringify!(#node_name)))
             }
         }
 
-        impl Stater<State> for #node_name {    
+        impl #mp::Stater<State> for #node_name {    
             fn apply(&mut self, payload: &#mp::Payload) {
-                let depth = self.depth();
+                let depth = self.emitter.depth();
                 match payload.get_id(depth) {
                     #(Some(#indexes) => Ok(self.#names.apply(payload)),)*
                     Some(_) => Err(payload.error(depth, "unknown id")),

@@ -51,7 +51,7 @@ impl ActixApp {
                         },
                         ServerSocketMessage::Message((id, payload)) => {
                             log::info!("{id} 🔗 Message({:?})", payload);
-                            self.client_nodes[&id].reporter().emit(payload);
+                            self.client_nodes[&id].emit_payload(payload);
                         },
                     }
                 },     
@@ -64,7 +64,9 @@ impl ActixApp {
         id: Uuid,
         send_tx: UnboundedSender<(Uuid, Payload)>,
     ) -> Root {
-        Root::new(move |payload| send_tx.send((id, payload)).unwrap())
+        Root::new_activate(
+            move |payload| send_tx.send((id, payload)).unwrap()
+        )
     }
 }
 

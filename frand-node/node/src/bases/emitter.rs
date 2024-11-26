@@ -1,62 +1,67 @@
-use std::{cell::{Ref, RefCell}, fmt::Debug, sync::Arc};
+use std::{cell::RefCell, fmt::Debug, sync::Arc};
 use bases::{PayloadId, PayloadKey};
-use crossbeam::channel::Sender;
 use crate::*;
 
-#[derive(Debug, Default, Clone)]
-pub struct Emitter {
+#[derive(Clone)]
+pub struct Emitter<N: NodeBase> {
     depth: usize,
     key: PayloadKey,
-    reporter: RefCell<Reporter>,    
+    callback: RefCell<Arc<dyn Fn(Payload)>>,    
+    process: RefCell<Option<fn(&N, Payload, N::Message)>>,    
 }
 
-#[derive(Default, Clone)]
-pub enum Reporter {
-    Callback(Arc<dyn Fn(Payload)>),
-    Sender(Sender<Payload>),
-    #[default] None,
-}
-
-impl Debug for Reporter {
+impl<N: NodeBase> Debug for Emitter<N> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Callback(_) => f.write_str("Arc<dyn Fn(Payload)>"),
-            Self::Sender(sender) => f.debug_tuple("Sender").field(sender).finish(),
-            Self::None => f.debug_tuple("None").finish(),
+        f.debug_struct("Emitter")
+        .field("depth", &self.depth)
+        .field("key", &self.key)
+        .field("callback", &"RefCell<Arc<dyn Fn(Payload)>>")
+        .field("process", &"RefCell<Option<fn(&N, Payload, N::Message)>>")
+        .finish()
+    }
+}
+
+impl<N: NodeBase> Default for Emitter<N> {
+    fn default() -> Self {
+        Self { 
+            depth: Default::default(), 
+            key: Default::default(), 
+            callback: RefCell::new(Arc::new(|_| ())),
+            process: RefCell::new(None),
         }
     }
 }
 
-impl Emitter {
+impl<N: NodeBase> Emitter<N> {
     pub fn depth(&self) -> usize { self.depth }
-    pub fn reporter(&self) -> Ref<Reporter> { self.reporter.borrow() }
 
     pub fn new(
-        reporter: Reporter,   
         key: Vec<PayloadId>,
     ) -> Self {
         Self { 
             depth: key.len(),
-            key: key.into_boxed_slice(),
-            reporter: RefCell::new(reporter),
+            key: key.into_boxed_slice(),            
+            callback: RefCell::new(Arc::new(|_| ())),
+            process: RefCell::new(None),      
         }
     }  
 
-    pub fn set_reporter(&self, reporter: Reporter) {
-        *self.reporter.borrow_mut() = reporter;
+    pub fn set_callback(&self, callback: Arc<dyn Fn(Payload)>) {
+        *self.callback.borrow_mut() = callback;
+    }
+
+    pub fn set_process(&self, process: fn(&N, Payload, N::Message)) {
+        if self.process.borrow().is_some() {
+            log::warn!("Process overwrite actions are disallowed");
+        }
+        *self.process.borrow_mut() = Some(process);
     }
 
     pub fn emit<S: StateBase>(&self, state: S) {
-        self.reporter.borrow().emit(Payload::new(&self.key, None, state));
+        self.emit_payload(Payload::new(self.key.clone(), state));
     }
-}
 
-impl Reporter {
-    pub fn emit(&self, payload: Payload) {
-        match self {
-            Reporter::Callback(callback) => (callback)(payload),
-            Reporter::Sender(sender) => sender.send(payload).unwrap(),
-            Reporter::None => {},
-        }
+    pub fn emit_payload(&self, payload: Payload) {
+        (self.callback.borrow())(payload);
     }
 }

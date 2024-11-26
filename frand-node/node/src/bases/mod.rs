@@ -1,12 +1,14 @@
 use std::fmt::Debug;
 
 mod emitter;
+mod processor;
 mod message;
 mod state;
 mod node;
 
 pub use self::{
     emitter::*,
+    processor::*,
     message::*,
     state::*,
     node::*,
