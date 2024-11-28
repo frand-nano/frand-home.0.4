@@ -111,13 +111,7 @@ pub fn expand(
             }
 
             fn emit_packet(&self, packet: #mp::Packet) {
-                let depth = self.emitter.depth();
-                match packet.get_id(depth) {
-                    #(Some(#indexes) => Ok(self.#names.emit_packet(packet)),)*
-                    Some(_) => Err(packet.error(depth, "unknown id")),
-                    None => Ok(self.emitter.emit_packet(packet)),
-                }     
-                .unwrap_or_else(|err| panic!("{}::emit_packet() deserialize Err({err})", stringify!(#node_name)));
+                self.emitter.emit_packet(packet);
             }    
 
             fn set_callback<F>(&self, callback: &#mp::Arc<F>)  

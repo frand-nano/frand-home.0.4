@@ -48,12 +48,7 @@ impl<S: StateBase + MessageBase> NodeBase for Node<S> {
     }
 
     fn emit_packet(&self, packet: Packet) {
-        let depth = self.emitter.depth();
-        match packet.get_id(depth) {
-            Some(_) => Err(packet.error(depth, "unknown id")),
-            None => Ok(self.emitter.emit_packet(packet)),
-        }
-        .unwrap_or_else(|err| panic!("Node<S>::emit_packet() deserialize Err({err})"));
+        self.emitter.emit_packet(packet);
     }
 
     fn set_callback<F>(&self, callback: &Arc<F>)  
