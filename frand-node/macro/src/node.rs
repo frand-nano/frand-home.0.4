@@ -3,7 +3,7 @@ use proc_macro2::TokenStream;
 use syn::*;
 use quote::quote;
 
-pub type PayloadId = u32;
+pub type NodeId = u32;
 
 pub fn expand(
     state: &ItemStruct,
@@ -33,7 +33,7 @@ pub fn expand(
         _ => Vec::default(),
     };  
 
-    let indexes: Vec<_> = (0..fields.len() as PayloadId).into_iter().collect();
+    let indexes: Vec<_> = (0..fields.len() as NodeId).into_iter().collect();
     let names: Vec<_> = fields.iter().filter_map(|field| field.ident.as_ref()).collect();
     let tys: Vec<_> = fields.iter().map(|field| &field.ty).collect();
 
@@ -95,8 +95,8 @@ pub fn expand(
         
         impl #mp::NodeBase for #node_name {
             fn new_child(
-                mut key: Vec<#mp::PayloadId>,
-                id: Option<#mp::PayloadId>,  
+                mut key: Vec<#mp::NodeId>,
+                id: Option<#mp::NodeId>,  
             ) -> Self {
                 if let Some(id) = id { key.push(id); }
 
@@ -110,49 +110,49 @@ pub fn expand(
                 self.emitter.emit(state);
             }
 
-            fn emit_payload(&self, payload: #mp::Payload) {
+            fn emit_packet(&self, packet: #mp::Packet) {
                 let depth = self.emitter.depth();
-                match payload.get_id(depth) {
-                    #(Some(#indexes) => Ok(self.#names.emit_payload(payload)),)*
-                    Some(_) => Err(payload.error(depth, "unknown id")),
-                    None => Ok(self.emitter.emit_payload(payload)),
+                match packet.get_id(depth) {
+                    #(Some(#indexes) => Ok(self.#names.emit_packet(packet)),)*
+                    Some(_) => Err(packet.error(depth, "unknown id")),
+                    None => Ok(self.emitter.emit_packet(packet)),
                 }     
-                .unwrap_or_else(|err| panic!("{}::emit_payload() deserialize Err({err})", stringify!(#node_name)));
+                .unwrap_or_else(|err| panic!("{}::emit_packet() deserialize Err({err})", stringify!(#node_name)));
             }    
 
             fn set_callback<F>(&self, callback: &#mp::Arc<F>)  
-            where F: 'static + Fn(#mp::Payload) {
+            where F: 'static + Fn(#mp::Packet) {
                 #(self.#names.set_callback(callback);)*   
                 self.emitter.set_callback(callback.clone());
             }
 
             fn activate<F>(&self, callback: F) -> &Self 
-            where F: 'static + Fn(#mp::Payload) {
+            where F: 'static + Fn(#mp::Packet) {
                 self.set_callback(&#mp::Arc::new(callback));
                 self
             }
         
             fn fork<F>(&self, callback: F) -> Self 
-            where F: 'static + Fn(#mp::Payload) {
+            where F: 'static + Fn(#mp::Packet) {
                 let result = self.clone();
                 result.set_callback(&#mp::Arc::new(callback));        
                 result
             }
         
-            fn inject(&self, process: fn(&Self, &#mp::Payload, Self::Message)) -> &Self {
+            fn inject(&self, process: fn(&Self, &#mp::Packet, Self::Message)) -> &Self {
                 self.emitter.set_process(process);
                 self
             }
         
-            fn call_process(&self, depth: usize, payload: &Payload) {
-                match payload.get_id(depth) {
+            fn call_process(&self, depth: usize, packet: &Packet) {
+                match packet.get_id(depth) {
                     #(Some(#indexes) => {
-                        self.#names.call_process(depth + 1, payload);
-                        self.emitter.call_process(self, depth, payload);
+                        self.#names.call_process(depth + 1, packet);
+                        self.emitter.call_process(self, depth, packet);
                         Ok(())
                     },)*
-                    Some(_) => Err(payload.error(depth, "unknown id")),
-                    None => Ok(self.emitter.call_process(self, depth, payload)),
+                    Some(_) => Err(packet.error(depth, "unknown id")),
+                    None => Ok(self.emitter.call_process(self, depth, packet)),
                 }     
                 .unwrap_or_else(|err| panic!("{}::call_process() Err({err})", stringify!(#node_name)))
             }
@@ -163,14 +163,14 @@ pub fn expand(
                 #(self.#names.apply(state.#names);)*
             }
 
-            fn apply_payload(&mut self, payload: &#mp::Payload) {
+            fn apply_packet(&mut self, packet: &#mp::Packet) {
                 let depth = self.emitter.depth();
-                match payload.get_id(depth) {
-                    #(Some(#indexes) => Ok(self.#names.apply_payload(payload)),)*
-                    Some(_) => Err(payload.error(depth, "unknown id")),
-                    None => Ok(self.apply(payload.read_state())),
+                match packet.get_id(depth) {
+                    #(Some(#indexes) => Ok(self.#names.apply_packet(packet)),)*
+                    Some(_) => Err(packet.error(depth, "unknown id")),
+                    None => Ok(self.apply(packet.read_state())),
                 }     
-                .unwrap_or_else(|err| panic!("{}::apply_payload() deserialize Err({err})", stringify!(#node_name)));
+                .unwrap_or_else(|err| panic!("{}::apply_packet() deserialize Err({err})", stringify!(#node_name)));
             }        
         }
     };
@@ -204,13 +204,13 @@ pub fn expand(
         }
 
         impl #mp::MessageBase for Message {
-            fn from_payload(depth: usize, payload: &#mp::Payload) -> Self {
-                match payload.get_id(depth) {
-                    #(Some(#indexes) => Ok(Message::#names(#message_tys::from_payload(depth + 1, payload))),)*
-                    Some(_) => Err(payload.error(depth, "unknown id")),
-                    None => Ok(Self::State(payload.read_state())),
+            fn from_packet(depth: usize, packet: &#mp::Packet) -> Self {
+                match packet.get_id(depth) {
+                    #(Some(#indexes) => Ok(Message::#names(#message_tys::from_packet(depth + 1, packet))),)*
+                    Some(_) => Err(packet.error(depth, "unknown id")),
+                    None => Ok(Self::State(packet.read_state())),
                 }     
-                .unwrap_or_else(|err| panic!("{}::from_payload() Err({err})", stringify!(#node_name)))
+                .unwrap_or_else(|err| panic!("{}::from_packet() Err({err})", stringify!(#node_name)))
             }
         }
     };

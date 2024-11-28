@@ -1,7 +1,7 @@
 use std::{error::Error, fmt, string::FromUtf8Error};
 use crossbeam::channel::SendError;
 use serde::{Deserialize, Serialize};
-use crate::bases::{Payload, PayloadDepth, PayloadKey};
+use crate::bases::{Packet, NodeDepth, NodeKey};
 
 pub type Result<T, E = NodeError> = core::result::Result<T, E>;
 
@@ -9,7 +9,7 @@ pub type Result<T, E = NodeError> = core::result::Result<T, E>;
 pub enum NodeError {
     Text(String),
     Message(MessageError),
-    Send(SendError<Payload>),
+    Send(SendError<Packet>),
     Poison(String),
     FromUtf8(FromUtf8Error),
     Anyhow(anyhow::Error),
@@ -32,8 +32,8 @@ impl Error for NodeError {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageError {
-    pub depth: PayloadDepth,
-    pub key: PayloadKey,
+    pub depth: NodeDepth,
+    pub key: NodeKey,
     pub state: Box<[u8]>,
     pub message: String,
 }
@@ -64,8 +64,8 @@ impl From<MessageError> for NodeError {
     }
 }
 
-impl From<SendError<Payload>> for NodeError {
-    fn from(value: SendError<Payload>) -> Self {
+impl From<SendError<Packet>> for NodeError {
+    fn from(value: SendError<Packet>) -> Self {
         Self::Send(value)
     }
 }

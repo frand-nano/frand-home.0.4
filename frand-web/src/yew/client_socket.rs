@@ -1,11 +1,11 @@
-use frand_node::Payload;
+use frand_node::Packet;
 use yew::{Component, Context};
 use yew_websocket::websocket::{WebSocketService, WebSocketStatus, WebSocketTask};
 
-pub struct FromServerSocket(Payload);
+pub struct FromServerSocket(Packet);
 
-impl Into<Payload> for FromServerSocket {
-    fn into(self) -> Payload { self.0 }
+impl Into<Packet> for FromServerSocket {
+    fn into(self) -> Packet { self.0 }
 }
 
 pub struct ClientSocket {
@@ -17,7 +17,7 @@ impl ClientSocket {
     where <C as Component>::Message: From<FromServerSocket> 
     {
         let callback = context.link().callback(
-            |payload| FromServerSocket(payload)
+            |packet| FromServerSocket(packet)
         );
 
         let notification = context.link().batch_callback(
@@ -47,7 +47,7 @@ impl ClientSocket {
         }
     }
 
-    pub fn send(&self, message: &Payload) {
+    pub fn send(&self, message: &Packet) {
         if let Some(outbound_tx) = &self.outbound_tx {
             outbound_tx.send_binary(message.try_into().unwrap())
         }              

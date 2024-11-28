@@ -12,8 +12,8 @@ pub struct App {
 }
 
 pub enum Message {
-    FromServer(Payload),
-    FromNode(Payload),
+    FromServer(Packet),
+    FromNode(Packet),
 }
 
 impl From<FromServerSocket> for Message {
@@ -29,14 +29,14 @@ impl Component for App {
         let socket = ClientSocket::new(context);
 
         let callback = context.link().callback(
-            move |payload| {
-                socket.send(&payload);
-                Message::FromNode(payload)
+            move |packet| {
+                socket.send(&packet);
+                Message::FromNode(packet)
             }
         );
 
         context.props().activate(
-            move |payload| callback.emit(payload)
+            move |packet| callback.emit(packet)
         ).clone()
     }
 
@@ -52,13 +52,13 @@ impl Component for App {
 
     fn update(&mut self, _ctx: &Context<Self>, message: Self::Message) -> bool {
         match message {
-            Message::FromServer(payload) => {
-                log::debug!("FromServer({:?})", payload);
-                self.apply_payload(&payload);
+            Message::FromServer(packet) => {
+                log::debug!("FromServer({:?})", packet);
+                self.apply_packet(&packet);
                 true
             },
-            Message::FromNode(payload) => {
-                log::debug!("FromNode({:?})", payload);
+            Message::FromNode(packet) => {
+                log::debug!("FromNode({:?})", packet);
                 false
             },
         }
@@ -76,17 +76,17 @@ pub mod backend {
 
     pub fn handle(
         id: &Uuid,
-        send_tx: &UnboundedSender<(Uuid, Payload)>,
-        broadcast_tx: &UnboundedSender<Payload>,
+        send_tx: &UnboundedSender<(Uuid, Packet)>,
+        broadcast_tx: &UnboundedSender<Packet>,
         node: &App, 
         message: AppMod::Message, 
-        payload: Payload,
+        packet: Packet,
     ) {
         use AppMessage::*;
         match message {
             shared(message) => {
                 use SharedMessage::*;
-                broadcast_tx.send(payload).unwrap();
+                broadcast_tx.send(packet).unwrap();
                 match message {
                     number1(n) => node.shared.number2.emit(n + 1),
                     number2(n) => node.shared.number3.emit(n + 1),
@@ -97,7 +97,7 @@ pub mod backend {
             }
             personal(message) => {
                 use PersonalMessage::*;
-                send_tx.send((id.clone(), payload)).unwrap();
+                send_tx.send((id.clone(), packet)).unwrap();
                 match message {
                     number1(n) => {
                         node.personal.number4.emit(n - 1);

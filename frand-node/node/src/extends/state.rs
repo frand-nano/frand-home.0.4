@@ -22,15 +22,15 @@ macro_rules! impl_state_for {
             }
 
             impl frand_node::macro_prelude::MessageBase for $tys {
-                fn from_payload(
+                fn from_packet(
                     depth: usize,
-                    payload: &frand_node::macro_prelude::Payload,
+                    packet: &frand_node::macro_prelude::Packet,
                 ) -> Self {
-                    match payload.get_id(depth) {
-                        Some(_) => Err(payload.error(depth, "unknown id")),
-                        None => Ok(payload.read_state()),
+                    match packet.get_id(depth) {
+                        Some(_) => Err(packet.error(depth, "unknown id")),
+                        None => Ok(packet.read_state()),
                     }     
-                    .unwrap_or_else(|err| panic!("{}::from_payload() Err({err})", stringify!($tys)))
+                    .unwrap_or_else(|err| panic!("{}::from_packet() Err({err})", stringify!($tys)))
                 }
             }
         )*      

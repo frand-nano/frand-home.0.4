@@ -21,20 +21,20 @@ impl ActixApp {
     }
 
     pub fn run(mut self) {
-        let (send_tx, mut send_rx) = unbounded_channel::<(Uuid, Payload)>();
-        let (broadcast_tx, mut broadcast_rx) = unbounded_channel::<Payload>();
+        let (send_tx, mut send_rx) = unbounded_channel::<(Uuid, Packet)>();
+        let (broadcast_tx, mut broadcast_rx) = unbounded_channel::<Packet>();
         
         spawn_local(async move {
             loop { select! {
-                Some((id, payload)) = send_rx.recv() => {
-                    self.client_nodes.get_mut(&id).unwrap().apply_payload(&payload);
-                    self.server_socket.send(&id, payload);
+                Some((id, packet)) = send_rx.recv() => {
+                    self.client_nodes.get_mut(&id).unwrap().apply_packet(&packet);
+                    self.server_socket.send(&id, packet);
                 },
-                Some(payload) = broadcast_rx.recv() => {
+                Some(packet) = broadcast_rx.recv() => {
                     for node in self.client_nodes.values_mut() {
-                        node.apply_payload(&payload);
+                        node.apply_packet(&packet);
                     }
-                    self.server_socket.broadcast(payload);
+                    self.server_socket.broadcast(packet);
                 },
                 Some(message) = self.server_socket.recv() => {
                     match message {
@@ -49,9 +49,9 @@ impl ActixApp {
                             log::info!("{id} 🔗 Close({:#?})", reason);          
                             self.client_nodes.remove(&id);              
                         },
-                        ServerSocketMessage::Message((id, payload)) => {
-                            log::info!("{id} 🔗 Message({:?})", payload);
-                            self.client_nodes[&id].emit_payload(payload);
+                        ServerSocketMessage::Message((id, packet)) => {
+                            log::info!("{id} 🔗 Message({:?})", packet);
+                            self.client_nodes[&id].emit_packet(packet);
                         },
                     }
                 },     
@@ -62,10 +62,10 @@ impl ActixApp {
 
     fn new_yew_node(
         id: Uuid,
-        send_tx: UnboundedSender<(Uuid, Payload)>,
+        send_tx: UnboundedSender<(Uuid, Packet)>,
     ) -> App {
         App::new_activate(
-            move |payload| send_tx.send((id, payload)).unwrap()
+            move |packet| send_tx.send((id, packet)).unwrap()
         )
     }
 }

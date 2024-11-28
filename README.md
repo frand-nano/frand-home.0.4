@@ -26,7 +26,7 @@ __Node__ 는 클라이언트에서 Yew Component 로 전달되어 이벤트를 �
     - 웹 개발을 위한 기초 코드. Actix 를 위한 ServerSocket 과 Yew 를 위한 ClientSocket 이 구현되어 있습니다.
 * frand-node
     - 서버와 클라이언트 간의 메시지 통신을 추상화하기 위한 Node 가 구현되어 있습니다.
-    - 각 필드에 emit() 을 호출함으로써 값을 변경하기 위한 Payload 를 생성하고 통신에 직접 사용하거나
+    - 각 필드에 emit() 을 호출함으로써 값을 변경하기 위한 Packet 를 생성하고 통신에 직접 사용하거나
         Message enum 으로 변환하여 rust 의 match 기능을 활용한 값 변경 전파로 이벤트를 제어할 수 있습니다.
 
 ## 기능

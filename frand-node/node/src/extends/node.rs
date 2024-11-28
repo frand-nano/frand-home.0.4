@@ -1,5 +1,5 @@
 use std::{ops::Deref, sync::Arc};
-use bases::{ElementBase, PayloadId};
+use bases::{ElementBase, NodeId};
 use crate::*;
 
 #[derive(Debug, PartialEq)]
@@ -33,8 +33,8 @@ impl<S: StateBase + MessageBase> ElementBase for Node<S> {
 
 impl<S: StateBase + MessageBase> NodeBase for Node<S> {      
     fn new_child(
-        mut key: Vec<PayloadId>,
-        id: Option<PayloadId>,  
+        mut key: Vec<NodeId>,
+        id: Option<NodeId>,  
     ) -> Self {
         if let Some(id) = id { key.push(id); }
 
@@ -47,42 +47,42 @@ impl<S: StateBase + MessageBase> NodeBase for Node<S> {
         self.emitter.emit(state);
     }
 
-    fn emit_payload(&self, payload: Payload) {
+    fn emit_packet(&self, packet: Packet) {
         let depth = self.emitter.depth();
-        match payload.get_id(depth) {
-            Some(_) => Err(payload.error(depth, "unknown id")),
-            None => Ok(self.emitter.emit_payload(payload)),
+        match packet.get_id(depth) {
+            Some(_) => Err(packet.error(depth, "unknown id")),
+            None => Ok(self.emitter.emit_packet(packet)),
         }
-        .unwrap_or_else(|err| panic!("Node<S>::emit_payload() deserialize Err({err})"));
+        .unwrap_or_else(|err| panic!("Node<S>::emit_packet() deserialize Err({err})"));
     }
 
     fn set_callback<F>(&self, callback: &Arc<F>)  
-    where F: 'static + Fn(Payload) {
+    where F: 'static + Fn(Packet) {
         self.emitter.set_callback(callback.clone());
     }
 
     fn activate<F>(&self, callback: F) -> &Self 
-    where F: 'static + Fn(Payload) {
+    where F: 'static + Fn(Packet) {
         self.emitter.set_callback(Arc::new(callback));
         self
     }
 
     fn fork<F>(&self, callback: F) -> Self 
-    where F: 'static + Fn(Payload) {
+    where F: 'static + Fn(Packet) {
         let result = self.clone();
         result.emitter.set_callback(Arc::new(callback));        
         result
     }
 
-    fn inject(&self, process: fn(&Self, &Payload, Self::Message)) -> &Self {
+    fn inject(&self, process: fn(&Self, &Packet, Self::Message)) -> &Self {
         self.emitter.set_process(process);
         self
     }
 
-    fn call_process(&self, depth: usize, payload: &Payload) {
-        match payload.get_id(depth) {
-            Some(_) => Err(payload.error(depth, "unknown id")),
-            None => Ok(self.emitter.call_process(self, depth, payload)),
+    fn call_process(&self, depth: usize, packet: &Packet) {
+        match packet.get_id(depth) {
+            Some(_) => Err(packet.error(depth, "unknown id")),
+            None => Ok(self.emitter.call_process(self, depth, packet)),
         }     
         .unwrap_or_else(|err| panic!("{}::call_process() Err({err})", stringify!(Node<S>)))
     }
@@ -93,12 +93,12 @@ impl<S: StateBase + MessageBase> Stater<S> for Node<S> {
         *self.emitter.value_mut() = state;
     }
 
-    fn apply_payload(&mut self, payload: &Payload) {
+    fn apply_packet(&mut self, packet: &Packet) {
         let depth = self.emitter.depth();
-        match payload.get_id(depth) {
-            Some(_) => Err(payload.error(depth, "unknown id")),
-            None => Ok(self.apply(payload.read_state())),
+        match packet.get_id(depth) {
+            Some(_) => Err(packet.error(depth, "unknown id")),
+            None => Ok(self.apply(packet.read_state())),
         }
-        .unwrap_or_else(|err| panic!("Node<S>::apply_payload() deserialize Err({err})"));
+        .unwrap_or_else(|err| panic!("Node<S>::apply_packet() deserialize Err({err})"));
     }
 }

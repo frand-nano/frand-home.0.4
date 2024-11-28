@@ -4,25 +4,25 @@ use result::MessageError;
 use serde::{Deserialize, Serialize};
 use crate::{*, result::{NodeError, Result}};
 
-pub type PayloadId = u32;
-pub type PayloadKey = Box<[PayloadId]>;
-pub type PayloadDepth = u32;
+pub type NodeId = u32;
+pub type NodeKey = Box<[NodeId]>;
+pub type NodeDepth = u32;
 
 pub trait MessageBase: Debug + Clone + Sized {
-    fn from_payload(depth: usize, payload: &Payload) -> Self;
+    fn from_packet(depth: usize, packet: &Packet) -> Self;
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct Payload {
-    key: PayloadKey,
+pub struct Packet {
+    key: NodeKey,
     state: Box<[u8]>,
 }
 
-impl Payload {
-    pub fn key(&self) -> &PayloadKey { &self.key }
+impl Packet {
+    pub fn key(&self) -> &NodeKey { &self.key }
 
     pub fn new<S: StateBase>(
-        key: PayloadKey, 
+        key: NodeKey, 
         state: S,
     ) -> Self {
         Self { 
@@ -49,7 +49,7 @@ impl Payload {
         )
     }
 
-    pub fn get_id(&self, depth: usize) -> Option<PayloadId> { 
+    pub fn get_id(&self, depth: usize) -> Option<NodeId> { 
         self.key.get(depth).copied()
     }
 
@@ -59,7 +59,7 @@ impl Payload {
         message: impl AsRef<str>,
     ) -> NodeError {
         MessageError { 
-            depth: depth as PayloadDepth, 
+            depth: depth as NodeDepth, 
             key: self.key.clone(), 
             state: self.state.clone(), 
             message: message.as_ref().to_owned(), 
@@ -67,20 +67,20 @@ impl Payload {
     }
 }
 
-impl TryFrom<&Payload> for Vec<u8> {    
+impl TryFrom<&Packet> for Vec<u8> {    
     type Error = NodeError;
 
-    fn try_from(payload: &Payload) -> Result<Self> {        
+    fn try_from(packet: &Packet) -> Result<Self> {        
         let mut buffer = Vec::new();
 
-        match ciborium::into_writer(payload, &mut buffer) {
+        match ciborium::into_writer(packet, &mut buffer) {
             Ok(()) => Ok(buffer),
-            Err(err) => Err(payload.error(0, err.to_string())),
+            Err(err) => Err(packet.error(0, err.to_string())),
         }
     }
 }
 
-impl TryFrom<Vec<u8>> for Payload {    
+impl TryFrom<Vec<u8>> for Packet {    
     type Error = NodeError;
 
     fn try_from(data: Vec<u8>) -> Result<Self> {      
@@ -89,22 +89,22 @@ impl TryFrom<Vec<u8>> for Payload {
     }
 }
 
-impl From<anyhow::Result<Vec<u8>>> for Payload {    
+impl From<anyhow::Result<Vec<u8>>> for Packet {    
     fn from(data: anyhow::Result<Vec<u8>>) -> Self {      
         data.unwrap().try_into().unwrap()
     }
 }
 
-impl TryFrom<&Payload> for String 
+impl TryFrom<&Packet> for String 
 {    
     type Error = NodeError;
 
-    fn try_from(payload: &Payload) -> Result<Self> {       
-        Ok(String::from_utf8(payload.try_into()?)?)
+    fn try_from(packet: &Packet) -> Result<Self> {       
+        Ok(String::from_utf8(packet.try_into()?)?)
     }
 }
 
-impl TryFrom<String> for Payload {    
+impl TryFrom<String> for Packet {    
     type Error = NodeError;
 
     fn try_from(data: String) -> Result<Self> {      
@@ -112,7 +112,7 @@ impl TryFrom<String> for Payload {
     }
 }
 
-impl From<anyhow::Result<String>> for Payload {   
+impl From<anyhow::Result<String>> for Packet {   
     fn from(data: anyhow::Result<String>) -> Self {      
         data.unwrap().try_into().unwrap()
     }
