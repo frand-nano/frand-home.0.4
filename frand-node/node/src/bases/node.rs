@@ -30,7 +30,7 @@ pub trait NodeBase: ElementBase + Stater<Self::State> {
 
     fn inject(&self, process: fn(&Self, &Packet, Self::Message)) -> &Self;
 
-    fn call_process(&self, depth: usize, packet: &Packet);
+    fn process(&self, depth: usize, packet: &Packet);
 }
 
 pub trait Stater<S: StateBase> {

@@ -83,7 +83,7 @@ impl<N: NodeBase, V: StateBase> Emitter<N, V> {
         }
     }
 
-    pub fn call_process(&self, node: &N, depth: usize, packet: &Packet) {
+    pub fn process(&self, node: &N, depth: usize, packet: &Packet) {
         if let Some(process) = self.process.get() {
             let message = N::Message::from_packet(depth, packet);
             (process)(node, packet, message);

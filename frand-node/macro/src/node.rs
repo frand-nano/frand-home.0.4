@@ -138,17 +138,17 @@ pub fn expand(
                 self
             }
         
-            fn call_process(&self, depth: usize, packet: &Packet) {
+            fn process(&self, depth: usize, packet: &Packet) {
                 match packet.get_id(depth) {
                     #(Some(#indexes) => {
-                        self.#names.call_process(depth + 1, packet);
-                        self.emitter.call_process(self, depth, packet);
+                        self.#names.process(depth + 1, packet);
+                        self.emitter.process(self, depth, packet);
                         Ok(())
                     },)*
                     Some(_) => Err(packet.error(depth, "unknown id")),
-                    None => Ok(self.emitter.call_process(self, depth, packet)),
+                    None => Ok(self.emitter.process(self, depth, packet)),
                 }     
-                .unwrap_or_else(|err| panic!("{}::call_process() Err({err})", stringify!(#node_name)))
+                .unwrap_or_else(|err| panic!("{}::process() Err({err})", stringify!(#node_name)))
             }
         }
 

@@ -42,7 +42,7 @@ impl ActixApp {
                             log::info!("{id} 🔗 Open");
                             
                             self.client_nodes.insert(id, 
-                                Self::new_yew_node(id, send_tx.clone()),
+                                Self::new_client_node(id, send_tx.clone()),
                             );
                         },
                         ServerSocketMessage::Close((id, reason)) => {
@@ -60,7 +60,7 @@ impl ActixApp {
         });
     }
 
-    fn new_yew_node(
+    fn new_client_node(
         id: Uuid,
         send_tx: UnboundedSender<(Uuid, Packet)>,
     ) -> App {
