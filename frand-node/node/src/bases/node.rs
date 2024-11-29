@@ -1,36 +1,14 @@
-use std::sync::Arc;
-use super::{message::{Packet, NodeId}, state::StateBase, ElementBase};
+use super::{message::{NodeId, Packet}, state::StateBase, ElementBase, Reporter};
 
 pub trait NodeBase: ElementBase + Stater<Self::State> {   
-    fn new() -> Self { Self::new_child(vec![], None) }
-
-    fn new_child(  
+    fn new(  
         key: Vec<NodeId>,
         id: Option<NodeId>,
+        reporter: Reporter,
     ) -> Self;
-
-    fn new_activate<F>(callback: F) -> Self
-    where F: 'static + Fn(Packet) {
-        let result = Self::new();
-        result.activate(callback);
-        result
-    }
 
     fn emit(&self, state: Self::State);
     fn emit_packet(&self, packet: Packet);
-
-    fn set_callback<F>(&self, callback: &Arc<F>)  
-    where F: 'static + Fn(Packet);
-
-    fn activate<F>(&self, callback: F) -> &Self 
-    where F: 'static + Fn(Packet);
-
-    fn fork<F>(&self, callback: F) -> Self 
-    where F: 'static + Fn(Packet);
-
-    fn inject(&self, process: fn(&Self, &Packet, Self::Message)) -> &Self;
-
-    fn process(&self, depth: usize, packet: &Packet);
 }
 
 pub trait Stater<S: StateBase> {

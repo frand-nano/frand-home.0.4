@@ -54,7 +54,7 @@ pub fn expand(
         #(#node_attrs)*
         #[derive(Debug, PartialEq)]
         pub struct #node_name {
-            emitter: #mp::Emitter<#node_name>,     
+            emitter: #mp::Emitter,     
             #(pub #names: #node_tys,)*
         }
     };
@@ -84,7 +84,7 @@ pub fn expand(
         }
 
         impl Default for #node_name {
-            fn default() -> Self { Self::new() }
+            fn default() -> Self { Self::new(vec![], None, #mp::Reporter::None) }
         }
 
         impl #mp::ElementBase for #node_name {
@@ -94,17 +94,18 @@ pub fn expand(
         }
         
         impl #mp::NodeBase for #node_name {
-            fn new_child(
+            fn new(
                 mut key: Vec<#mp::NodeId>,
                 id: Option<#mp::NodeId>,  
+                reporter: #mp::Reporter,
             ) -> Self {
                 if let Some(id) = id { key.push(id); }
 
                 Self { 
-                    #(#names: #node_tys::new_child(key.clone(), Some(#indexes)),)*
-                    emitter: #mp::Emitter::new(key),
+                    #(#names: #node_tys::new(key.clone(), Some(#indexes), reporter.clone()),)*
+                    emitter: #mp::Emitter::new(key, reporter),
                 }
-            }        
+            }       
 
             fn emit(&self, state: Self::State) {
                 self.emitter.emit(state);
@@ -113,43 +114,6 @@ pub fn expand(
             fn emit_packet(&self, packet: #mp::Packet) {
                 self.emitter.emit_packet(packet);
             }    
-
-            fn set_callback<F>(&self, callback: &#mp::Arc<F>)  
-            where F: 'static + Fn(#mp::Packet) {
-                #(self.#names.set_callback(callback);)*   
-                self.emitter.set_callback(callback.clone());
-            }
-
-            fn activate<F>(&self, callback: F) -> &Self 
-            where F: 'static + Fn(#mp::Packet) {
-                self.set_callback(&#mp::Arc::new(callback));
-                self
-            }
-        
-            fn fork<F>(&self, callback: F) -> Self 
-            where F: 'static + Fn(#mp::Packet) {
-                let result = self.clone();
-                result.set_callback(&#mp::Arc::new(callback));        
-                result
-            }
-        
-            fn inject(&self, process: fn(&Self, &#mp::Packet, Self::Message)) -> &Self {
-                self.emitter.set_process(process);
-                self
-            }
-        
-            fn process(&self, depth: usize, packet: &Packet) {
-                match packet.get_id(depth) {
-                    #(Some(#indexes) => {
-                        self.#names.process(depth + 1, packet);
-                        self.emitter.process(self, depth, packet);
-                        Ok(())
-                    },)*
-                    Some(_) => Err(packet.error(depth, "unknown id")),
-                    None => Ok(self.emitter.process(self, depth, packet)),
-                }     
-                .unwrap_or_else(|err| panic!("{}::process() Err({err})", stringify!(#node_name)))
-            }
         }
 
         impl #mp::Stater<State> for #node_name {    

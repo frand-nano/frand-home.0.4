@@ -2,7 +2,7 @@ use yew::*;
 use frand_node::*;
 use crate::app::view::{IncButton, IncButtonView};
 
-#[node]
+#[node_macro]
 #[derive(yew::Properties)]
 pub struct Shared {
     pub number1: i32,
@@ -10,6 +10,8 @@ pub struct Shared {
     pub number3: i32,
     pub number4: i32,
 }
+
+shared_macro!{}
 
 #[function_component]
 pub fn SharedView(shared: &Shared) -> Html {

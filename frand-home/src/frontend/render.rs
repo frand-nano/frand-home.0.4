@@ -1,7 +1,7 @@
 use yew::Renderer;
-use crate::app::app::App;
+use crate::app::app::YewApp;
 
 #[allow(unused)]
 pub fn render() {
-    Renderer::<App>::new().render();    
+    Renderer::<YewApp>::new().render();    
 }

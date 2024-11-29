@@ -6,9 +6,14 @@ use super::{personal::Personal, shared::Shared};
 
 #[node]
 #[derive(Properties)]
-pub struct App {
+pub struct Root {
     shared: Shared,
     personal: Personal,
+}
+
+pub struct YewApp {
+    container: Container<Root>,
+    socket: ClientSocket,
 }
 
 pub enum Message {
@@ -20,32 +25,30 @@ impl From<FromServerSocket> for Message {
     fn from(value: FromServerSocket) -> Self { Self::FromServer(value.into()) }
 }
 
-impl Component for App {
+impl yew::Component for YewApp {
     type Message = Message;
-    type Properties = Self;
+    type Properties = Root;
 
     fn create(context: &Context<Self>) -> Self {
         log::debug!("App::create");
         let socket = ClientSocket::new(context);
 
         let callback = context.link().callback(
-            move |packet| {
-                socket.send(&packet);
-                Message::FromNode(packet)
-            }
+            move |packet| Message::FromNode(packet)
         );
 
-        context.props().activate(
-            move |packet| callback.emit(packet)
-        ).clone()
+        Self { 
+            container: Container::new(move |packet| callback.emit(packet)),
+            socket,
+        }
     }
 
     fn view(&self, _ctx: &Context<Self>) -> Html {    
         log::debug!("App::view");
         html! {
             <div>
-                <SharedView ..self.shared.clone() />
-                <PersonalView ..self.personal.clone() />                
+                <SharedView ..self.container.shared.clone() />
+                <PersonalView ..self.container.personal.clone() />                
             </div>
         }
     }
@@ -54,11 +57,12 @@ impl Component for App {
         match message {
             Message::FromServer(packet) => {
                 log::debug!("FromServer({:?})", packet);
-                self.apply_packet(&packet);
+                self.container.apply_packet(&packet);
                 true
             },
             Message::FromNode(packet) => {
-                log::debug!("FromNode({:?})", packet);
+                log::debug!("FromNode");
+                self.container.process(packet, |_,packet,_| self.socket.send(packet));
                 false
             },
         }

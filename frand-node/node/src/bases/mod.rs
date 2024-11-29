@@ -5,6 +5,7 @@ mod processor;
 mod message;
 mod state;
 mod node;
+mod container;
 
 pub use self::{
     emitter::*,
@@ -12,6 +13,7 @@ pub use self::{
     message::*,
     state::*,
     node::*,
+    container::*,
 };
 
 pub trait ElementBase: Debug + Clone + Default + Sized + PartialEq {   

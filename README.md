@@ -19,12 +19,13 @@ Actix 와 Yew 를 이용하여 Rust 로 개발하는 풀스택 웹 프로젝트
     - emit_packet(packet) 을 호출하여 설정된 클로저를 callback 할 수 있습니다.
     - apply(state) 를 호출하여 state 를 필드의 값으로 설정할 수 있습니다.
     - apply_packet(packet) 을 호출하여 packet 이 지정하는 필드에 packet 이 가진 state 를 값으로 설정할 수 있습니다.
-    - (구현중) process(packet) 을 호출하여 미리 지정된 fn(node, message, packet) 을 실행하고 packet 으로부터 일어날 값의 변화들을 여러 개의 packet 으로 받을 수 있습니다.
 * __Message__ 는 Model 의 각 field 에 해당하는 값을 가질 수 있는 enum 입니다.
     - __Packet__ 으로부터 생성될 수 있습니다.
     - __Message__ 를 match 하여 각 이벤트를 필터하고 전달된 값을 추출할 수 있습니다.
 * __Packet__ 은 Model 의 각 field 에 해당하는 유일한 key 값을 헤더로, 같이 전달될 state 를 페이로드로 가집니다.
     - [u8] 로 직렬화, 역직렬화 될 수 있습니다.
+* __Container__ 는 __Node__ 를 소유하며 Node.emit() 으로부터 발생된 __Packet__ 들을 처리합니다
+    - process(packet) 을 호출하여 FnMut(node, message, packet) 클로저를 packet 과 packet 으로부터 발생될 새로운 packet 들에 대하여 수행할 수 있습니다.
 * 위의 구성들을 활용하여 Model 에 새로운 값을 넣었을 때 일어날 변화들을 여러 개의 __Packet__ 들로 추출할 수 있고 그 __Packet__ 들을 원하는 곳으로 전달하고 다양한 작업에 응용할 수 있습니다.
 
 

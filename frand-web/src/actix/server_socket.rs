@@ -25,13 +25,13 @@ impl ServerSocket {
         }
     }
 
-    pub fn send(&self, id: &Uuid, message: Packet) {
-        self.connections[id].send(message);
+    pub fn send(&self, id: &Uuid, packet: Packet) {
+        self.connections[id].send(packet);
     }
 
-    pub fn broadcast(&self, message: Packet) {
+    pub fn broadcast(&self, packet: &Packet) {
         for connection in self.connections.values() {
-            connection.send(message.clone());
+            connection.send(packet.clone());
         }
     }
 

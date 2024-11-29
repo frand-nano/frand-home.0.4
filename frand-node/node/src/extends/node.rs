@@ -1,10 +1,10 @@
-use std::{ops::Deref, sync::Arc};
-use bases::{ElementBase, NodeId};
+use std::ops::Deref;
+use bases::{ElementBase, NodeId, Reporter};
 use crate::*;
 
 #[derive(Debug, PartialEq)]
 pub struct Node<S: StateBase + MessageBase> {
-    emitter: Emitter<Self, S>,    
+    emitter: Emitter<S>,    
 }
 
 impl<S: StateBase + MessageBase> Clone for Node<S> {
@@ -22,7 +22,7 @@ impl<S: StateBase + MessageBase> Deref for Node<S> {
 }
 
 impl<S: StateBase + MessageBase> Default for Node<S> {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self { Self::new(vec![], None, Reporter::None) }
 }
 
 impl<S: StateBase + MessageBase> ElementBase for Node<S> {
@@ -32,14 +32,15 @@ impl<S: StateBase + MessageBase> ElementBase for Node<S> {
 }
 
 impl<S: StateBase + MessageBase> NodeBase for Node<S> {      
-    fn new_child(
+    fn new(
         mut key: Vec<NodeId>,
         id: Option<NodeId>,  
+        reporter: Reporter,
     ) -> Self {
         if let Some(id) = id { key.push(id); }
 
         Self { 
-            emitter: Emitter::new(key),
+            emitter: Emitter::new(key, reporter),
         }
     }  
 
@@ -49,37 +50,6 @@ impl<S: StateBase + MessageBase> NodeBase for Node<S> {
 
     fn emit_packet(&self, packet: Packet) {
         self.emitter.emit_packet(packet);
-    }
-
-    fn set_callback<F>(&self, callback: &Arc<F>)  
-    where F: 'static + Fn(Packet) {
-        self.emitter.set_callback(callback.clone());
-    }
-
-    fn activate<F>(&self, callback: F) -> &Self 
-    where F: 'static + Fn(Packet) {
-        self.emitter.set_callback(Arc::new(callback));
-        self
-    }
-
-    fn fork<F>(&self, callback: F) -> Self 
-    where F: 'static + Fn(Packet) {
-        let result = self.clone();
-        result.emitter.set_callback(Arc::new(callback));        
-        result
-    }
-
-    fn inject(&self, process: fn(&Self, &Packet, Self::Message)) -> &Self {
-        self.emitter.set_process(process);
-        self
-    }
-
-    fn process(&self, depth: usize, packet: &Packet) {
-        match packet.get_id(depth) {
-            Some(_) => Err(packet.error(depth, "unknown id")),
-            None => Ok(self.emitter.process(self, depth, packet)),
-        }     
-        .unwrap_or_else(|err| panic!("{}::process() Err({err})", stringify!(Node<S>)))
     }
 }
 
