@@ -114,6 +114,11 @@ pub fn expand(
             fn emit_packet(&self, packet: #mp::Packet) {
                 self.emitter.emit_packet(packet);
             }    
+
+            fn emit_future<Fu>(&self, future: Fu) 
+            where Fu: 'static + #mp::Future<Output = Self::State> {
+                self.emitter.emit_future(future);
+            }
         }
 
         impl #mp::Stater<State> for #node_name {    

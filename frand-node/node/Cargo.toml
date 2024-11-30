@@ -11,4 +11,5 @@ anyhow = "1.0"
 serde = "1"
 ciborium = "0.2"
 crossbeam = "0.8.4"
-yew = { version = "0.21", features = ["csr"] }
+futures = "0.3"
+tokio = { version = "1.4", features = ["sync", "macros"] }

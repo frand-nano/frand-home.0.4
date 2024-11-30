@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{future::Future, ops::Deref};
 use bases::{ElementBase, NodeId, Reporter};
 use crate::*;
 
@@ -50,6 +50,11 @@ impl<S: StateBase + MessageBase> NodeBase for Node<S> {
 
     fn emit_packet(&self, packet: Packet) {
         self.emitter.emit_packet(packet);
+    }
+
+    fn emit_future<Fu>(&self, future: Fu) 
+    where Fu: 'static + Future<Output = Self::State> {
+        self.emitter.emit_future(future);
     }
 }
 

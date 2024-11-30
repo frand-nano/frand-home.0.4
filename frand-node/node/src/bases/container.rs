@@ -6,7 +6,7 @@ use super::{NodeBase, Packet, Processor, Reporter};
 
 pub struct Container<N: NodeBase> {
     processor: Processor<N>,
-    output_rx: Receiver<Packet>, 
+    processed_rx: Receiver<Packet>, 
     node: N,
 }
 
@@ -30,19 +30,19 @@ impl<N: NodeBase> Container<N> {
             ),
         );
 
-        let (processor, output_rx) = Processor::new();
+        let (processor, processed_rx) = Processor::new();
 
         Self { 
             processor, 
-            output_rx,
+            processed_rx,
             node, 
         }
     }
 
     pub fn process<F>(&mut self, packet: Packet, update: F) 
-    where F: FnMut(&N, &Packet, N::Message) {
+    where F: FnMut(&N, Packet, N::Message) {
         self.processor.process(packet, update);
-        while let Ok(packet) = self.output_rx.try_recv() {
+        while let Ok(packet) = self.processed_rx.try_recv() {
             self.node.apply_packet(&packet);
         }
     }

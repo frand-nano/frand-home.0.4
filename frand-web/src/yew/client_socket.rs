@@ -47,9 +47,9 @@ impl ClientSocket {
         }
     }
 
-    pub fn send(&self, message: &Packet) {
+    pub fn send(&self, packet: Packet) {
         if let Some(outbound_tx) = &self.outbound_tx {
-            outbound_tx.send_binary(message.try_into().unwrap())
+            outbound_tx.send_binary(packet.try_into().unwrap())
         }              
     }
 }

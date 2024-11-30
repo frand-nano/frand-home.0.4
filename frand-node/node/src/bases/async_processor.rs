@@ -1,25 +1,26 @@
 use std::collections::HashSet;
-use crossbeam::channel::{unbounded, Receiver, Sender};
 use bases::{NodeKey, Reporter};
+use futures::future::LocalBoxFuture;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use crate::*;
 
-pub struct Processor<N: NodeBase> {     
+pub struct AsyncProcessor<N: NodeBase> {     
     node: N,    
-    node_rx: Receiver<Packet>, 
-    output_tx: Sender<Packet>, 
+    node_rx: UnboundedReceiver<LocalBoxFuture<'static, Packet>>, 
+    output_tx: UnboundedSender<Packet>, 
     handled_messages: HashSet<NodeKey>,
 }
 
-impl<N: NodeBase> Processor<N> 
+impl<N: NodeBase> AsyncProcessor<N> 
 {
-    pub fn new() -> (Self, Receiver<Packet>) {  
-        let (node_tx, node_rx) = unbounded();
-        let (output_tx, output_rx) = unbounded();
+    pub fn new() -> (Self, UnboundedReceiver<Packet>) {  
+        let (node_tx, node_rx) = unbounded_channel();
+        let (output_tx, output_rx) = unbounded_channel();
 
         let node = N::new(
             vec![], 
             None, 
-            Reporter::Sender(node_tx),
+            Reporter::FutureSender(node_tx),
         );
 
         (
@@ -33,7 +34,7 @@ impl<N: NodeBase> Processor<N>
         )
     }
 
-    pub fn process<F>(&mut self, mut packet: Packet, mut update: F) 
+    pub async fn process<F>(&mut self, mut packet: Packet, mut update: F) 
     where F: FnMut(&N, Packet, N::Message) {
         loop {
             if !self.handled_messages.contains(packet.key()) {
@@ -48,7 +49,7 @@ impl<N: NodeBase> Processor<N>
 
             }
             match self.node_rx.try_recv() {
-                Ok(recv) => packet = recv,
+                Ok(recv) => packet = recv.await,
                 Err(_) => break,
             }
         }

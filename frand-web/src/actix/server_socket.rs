@@ -25,11 +25,11 @@ impl ServerSocket {
         }
     }
 
-    pub fn send(&self, id: &Uuid, packet: Packet) {
-        self.connections[id].send(packet);
+    pub fn send(&self, id: Uuid, packet: Packet) {
+        self.connections[&id].send(packet);
     }
 
-    pub fn broadcast(&self, packet: &Packet) {
+    pub fn broadcast(&self, packet: Packet) {
         for connection in self.connections.values() {
             connection.send(packet.clone());
         }
@@ -101,9 +101,9 @@ impl ServerSocketConnection {
                         _ => {},
                     }
                 },
-                Some(message) = outbound_rx.recv() => {
-                    let message: Packet = message;
-                    let data: Vec<u8> = (&message).try_into()?;
+                Some(packet) = outbound_rx.recv() => {
+                    let packet: Packet = packet;
+                    let data: Vec<u8> = packet.try_into()?;
                     session.binary(Bytes::copy_from_slice(data.as_slice())).await?;
                 },
                 else => { break; },

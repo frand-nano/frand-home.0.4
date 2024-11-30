@@ -67,13 +67,13 @@ impl Packet {
     }
 }
 
-impl TryFrom<&Packet> for Vec<u8> {    
+impl TryFrom<Packet> for Vec<u8> {    
     type Error = NodeError;
 
-    fn try_from(packet: &Packet) -> Result<Self> {        
+    fn try_from(packet: Packet) -> Result<Self> {        
         let mut buffer = Vec::new();
 
-        match ciborium::into_writer(packet, &mut buffer) {
+        match ciborium::into_writer(&packet, &mut buffer) {
             Ok(()) => Ok(buffer),
             Err(err) => Err(packet.error(0, err.to_string())),
         }
@@ -95,11 +95,11 @@ impl From<anyhow::Result<Vec<u8>>> for Packet {
     }
 }
 
-impl TryFrom<&Packet> for String 
+impl TryFrom<Packet> for String 
 {    
     type Error = NodeError;
 
-    fn try_from(packet: &Packet) -> Result<Self> {       
+    fn try_from(packet: Packet) -> Result<Self> {       
         Ok(String::from_utf8(packet.try_into()?)?)
     }
 }

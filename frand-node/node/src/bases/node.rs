@@ -1,3 +1,4 @@
+use std::future::Future;
 use super::{message::{NodeId, Packet}, state::StateBase, ElementBase, Reporter};
 
 pub trait NodeBase: ElementBase + Stater<Self::State> {   
@@ -9,6 +10,7 @@ pub trait NodeBase: ElementBase + Stater<Self::State> {
 
     fn emit(&self, state: Self::State);
     fn emit_packet(&self, packet: Packet);
+    fn emit_future<Fu>(&self, future: Fu) where Fu: 'static + Future<Output = Self::State>;
 }
 
 pub trait Stater<S: StateBase> {
