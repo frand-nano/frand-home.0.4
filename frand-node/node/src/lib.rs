@@ -9,7 +9,7 @@ pub mod prelude {
 
     pub use crate::{
         bases::{
-            Packet, Emitter, Container,
+            Packet, Emitter, Container, AsyncProcessor,
             ElementBase, StateBase, NodeBase, MessageBase, Stater,
         },
         extends::Node,

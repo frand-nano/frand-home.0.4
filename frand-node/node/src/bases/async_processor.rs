@@ -42,11 +42,10 @@ impl<N: NodeBase> AsyncProcessor<N>
 
                 let message = N::Message::from_packet(0, &packet);
 
-                self.node.apply_packet(&packet);
                 self.output_tx.send(packet.clone()).unwrap();
+                self.node.apply_packet(&packet);
 
                 update(&self.node, packet, message);
-
             }
             match self.node_rx.try_recv() {
                 Ok(recv) => packet = recv.await,
