@@ -1,4 +1,2 @@
-pub mod app;
-pub mod shared;
-pub mod personal;
+pub mod node;
 pub mod view;

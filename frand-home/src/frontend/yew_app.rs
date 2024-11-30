@@ -1,15 +1,8 @@
 use yew::*;
 use frand_node::*;
 use frand_web::yew::client_socket::{ClientSocket, FromServerSocket};
-use crate::app::{personal::PersonalView, shared::SharedView};
-use super::{personal::Personal, shared::Shared};
 
-#[node]
-#[derive(Properties)]
-pub struct Root {
-    shared: Shared,
-    personal: Personal,
-}
+use crate::app::node::{personal::PersonalView, root::Root, shared::SharedView};
 
 pub struct YewApp {
     container: Container<Root>,

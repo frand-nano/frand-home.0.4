@@ -1,12 +1,8 @@
 use std::{ops::{Deref, DerefMut}, sync::Arc};
-
-use crossbeam::channel::Receiver;
-
 use super::{NodeBase, Packet, Processor, Reporter};
 
 pub struct Container<N: NodeBase> {
     processor: Processor<N>,
-    processed_rx: Receiver<Packet>, 
     node: N,
 }
 
@@ -20,7 +16,7 @@ impl<N: NodeBase> DerefMut for Container<N> {
 }
 
 impl<N: NodeBase> Container<N> {
-    pub fn new<F>(callback: F) -> Self 
+    pub fn new<F>(callback: F) -> Self
     where F: 'static + Fn(Packet) {
         let node = N::new(
             vec![], 
@@ -30,11 +26,8 @@ impl<N: NodeBase> Container<N> {
             ),
         );
 
-        let (processor, processed_rx) = Processor::new();
-
         Self { 
-            processor, 
-            processed_rx,
+            processor: Processor::new(), 
             node, 
         }
     }
@@ -42,8 +35,5 @@ impl<N: NodeBase> Container<N> {
     pub fn process<F>(&mut self, packet: Packet, update: F) 
     where F: FnMut(&N, Packet, N::Message) {
         self.processor.process(packet, update);
-        while let Ok(packet) = self.processed_rx.try_recv() {
-            self.node.apply_packet(&packet);
-        }
     }
 }

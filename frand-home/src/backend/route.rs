@@ -66,13 +66,13 @@ pub async fn get_res(
 pub async fn get_ws(
     request: HttpRequest, 
     stream: Payload,
-    new_socket_tx: Data<UnboundedSender<ServerSocketConnection>>,
+    new_conn_tx: Data<UnboundedSender<ServerSocketConnection>>,
 ) -> actix_web::Result<HttpResponse> {
     let (response, session, stream) = handle(&request, stream)?;
 
     let socket = ServerSocketConnection::new_start(stream, session);
     
-    if let Err(err) = new_socket_tx.send(socket) {
+    if let Err(err) = new_conn_tx.send(socket) {
         log::error!("Failed to send ServerSocket: {}", err);
         return Ok(HttpResponse::InternalServerError().body("Internal Server Error"));
     }

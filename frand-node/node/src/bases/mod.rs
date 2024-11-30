@@ -7,7 +7,6 @@ mod node;
 mod processor;
 mod container;
 mod async_processor;
-mod async_container;
 
 pub use self::{
     emitter::*,
@@ -17,7 +16,6 @@ pub use self::{
     processor::*,
     container::*,
     async_processor::*,
-    async_container::*,
 };
 
 pub trait ElementBase: Debug + Clone + Default + Sized + PartialEq {   

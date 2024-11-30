@@ -46,20 +46,20 @@ impl ServerSocket {
                 let inbound_tx = self.inbound_tx.clone();
                 let (conn_outbound_tx, mut conn_outbound_rx) = unbounded_channel();      
 
-                self.conn_outbound_txs.insert(id.clone(), conn_outbound_tx);
+                self.conn_outbound_txs.insert(id, conn_outbound_tx);
 
                 spawn_local(async move { 
                     loop { select! {
                         Some(packet) = conn_outbound_rx.recv() => {
                             conn.outbound_tx().send(packet).unwrap();
-                        },
+                        }
                         Some(message) = conn.inbound_rx().recv() => {
                             inbound_tx.send(message).unwrap();
-                        },
+                        }
                     }}
                 });
 
-                Some(ServerSocketMessage::Open(id.clone()))
+                Some(ServerSocketMessage::Open(id))
             },
             Some(socket_message) = self.inbound_rx.recv() => { 
                 match &socket_message {
@@ -86,7 +86,7 @@ pub struct ServerSocketConnection {
 pub enum ServerSocketMessage {
     Open(Uuid),
     Close((Uuid, Option<CloseReason>)),
-    Message((Uuid, Packet)),
+    Message((Option<Uuid>, Packet)),
 }
 
 impl ServerSocketConnection {
@@ -109,7 +109,7 @@ impl ServerSocketConnection {
                         Message::Binary(bytes) => {
                             inbound_tx.send(
                                 ServerSocketMessage::Message(
-                                    (id, Packet::try_from(bytes.to_vec())?)
+                                    (Some(id), Packet::try_from(bytes.to_vec())?)
                                 )
                             )?;
                         },
@@ -123,13 +123,13 @@ impl ServerSocketConnection {
                         },
                         _ => {},
                     }
-                },
+                }
                 Some(packet) = outbound_rx.recv() => {
                     let packet: Packet = packet;
                     let data: Vec<u8> = packet.try_into()?;
                     session.binary(Bytes::copy_from_slice(data.as_slice())).await?;
-                },
-                else => { break; },
+                }
+                else => { break; }
             }}
             Ok::<_, Error>(())
         });
