@@ -1,7 +1,7 @@
 use actix_files::NamedFile;
 use actix_web::{get, web::{Data, Path, Payload}, HttpRequest, HttpResponse};
 use actix_ws::handle;
-use frand_web::actix::server_socket::{ServerSocketConnection, ServerSocketMessage};
+use frand_web::actix::server_socket::ServerSocketConnection;
 use tokio::sync::mpsc::UnboundedSender;
 
 #[get("/")]
@@ -67,11 +67,10 @@ pub async fn get_ws(
     request: HttpRequest, 
     stream: Payload,
     new_socket_tx: Data<UnboundedSender<ServerSocketConnection>>,
-    socket_tx: Data<UnboundedSender<ServerSocketMessage>>,
 ) -> actix_web::Result<HttpResponse> {
     let (response, session, stream) = handle(&request, stream)?;
 
-    let socket = ServerSocketConnection::new_start(stream, socket_tx.get_ref().clone(), session);
+    let socket = ServerSocketConnection::new_start(stream, session);
     
     if let Err(err) = new_socket_tx.send(socket) {
         log::error!("Failed to send ServerSocket: {}", err);

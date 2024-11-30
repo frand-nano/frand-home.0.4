@@ -29,7 +29,7 @@ impl ActixApp {
             loop { select! {
                 Some((id, packet)) = send_rx.recv() => {
                     match id {
-                        Some(id) => self.server_socket.send(id, packet),
+                        Some(id) => self.server_socket.send(&id, packet),
                         None => self.server_socket.broadcast(packet),
                     }                  
                 },

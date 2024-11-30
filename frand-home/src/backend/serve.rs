@@ -1,6 +1,6 @@
 use actix_web::{dev::Server, middleware::Logger, web::{self, Data}, App, HttpRequest, HttpResponse, HttpServer};
 use anyhow::Result;
-use frand_web::actix::server_socket::{ServerSocket, ServerSocketConnection, ServerSocketMessage};
+use frand_web::actix::server_socket::{ServerSocket, ServerSocketConnection};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use crate::backend::{settings::Settings, actix_app::ActixApp};
 
@@ -17,31 +17,27 @@ pub async fn serve() -> Result<()> {
     log::info!("🚀 start server");
 
     let (new_socket_tx, new_socket_rx) = unbounded_channel::<ServerSocketConnection>();
-    let (socket_tx, socket_rx) = unbounded_channel::<ServerSocketMessage>();
     
-    run_socket_server(new_socket_rx, socket_rx);
-    run_http_server(new_socket_tx, socket_tx)?.await?;
+    run_socket_server(new_socket_rx);
+    run_http_server(new_socket_tx)?.await?;
 
     Ok(())
 }
 
 fn run_socket_server(
     new_socket_rx: UnboundedReceiver<ServerSocketConnection>,
-    socket_rx: UnboundedReceiver<ServerSocketMessage>,
 ) {
-    let server_socket = ServerSocket::new(new_socket_rx, socket_rx);
+    let server_socket = ServerSocket::new(new_socket_rx);
     let socket_server = ActixApp::new(server_socket);
     socket_server.run();
 }
 
 fn run_http_server(
     new_socket_tx: UnboundedSender<ServerSocketConnection>,
-    socket_tx: UnboundedSender<ServerSocketMessage>,
 ) -> Result<Server> {
     let server = HttpServer::new(move || {
         App::new()
         .app_data(Data::new(new_socket_tx.clone()))
-        .app_data(Data::new(socket_tx.clone()))
         .wrap(Logger::default())  
         .service(route::get_index)
         .service(route::get_favicon)
