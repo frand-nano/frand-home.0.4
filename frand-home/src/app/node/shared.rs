@@ -1,27 +1,23 @@
 use yew::*;
 use frand_node::*;
-use crate::app::view::{IncButton, IncButtonView};
+use crate::app::{node::number_sum::NumberSum, view::NumberSumIncView};
 
-#[node_macro]
-#[derive(yew::Properties)]
+#[node]
+#[derive(Properties)]
 pub struct Shared {
-    pub number1: i32,
-    pub number2: i32,
-    pub number3: i32,
-    pub number4: i32,
+    pub sum1: NumberSum,
+    pub sum2: NumberSum,
+    pub sum3: NumberSum,
 }
 
-shared_macro!{}
-
 #[function_component]
-pub fn SharedView(shared: &Shared) -> Html {
-    log::debug!("Shared::view");   
+pub fn SharedView(node: &Shared) -> Html {
     html! {
         <div>
-            <IncButtonView ..IncButton { number: shared.number1.clone() } />
-            <IncButtonView ..IncButton { number: shared.number2.clone() } />
-            <IncButtonView ..IncButton { number: shared.number3.clone() } />
-            <IncButtonView ..IncButton { number: shared.number4.clone() } />
+            {"Shared"}
+            <NumberSumIncView ..node.sum1.clone() />
+            <NumberSumIncView ..node.sum2.clone() />
+            <NumberSumIncView ..node.sum3.clone() />
         </div>
     }
 }

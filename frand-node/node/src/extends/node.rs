@@ -1,4 +1,4 @@
-use std::{future::Future, ops::Deref};
+use std::{fmt::Display, future::Future, ops::Deref};
 use bases::{ElementBase, NodeId, Reporter};
 use crate::*;
 
@@ -13,6 +13,13 @@ impl<S: StateBase + MessageBase> Clone for Node<S> {
         Self { 
             emitter: self.emitter.clone(), 
         }
+    }
+}
+
+impl<S: StateBase + MessageBase> Display for Node<S> 
+where S: Display {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.emitter.value())
     }
 }
 

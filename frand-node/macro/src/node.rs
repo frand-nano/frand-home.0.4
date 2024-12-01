@@ -13,11 +13,6 @@ pub fn expand(
     let node_attrs = &state.attrs;
     let node_name = state.ident.clone();
 
-    let state_name = Ident::new(
-        &format!("{}State", node_name.to_string()).to_case(Case::Pascal), 
-        node_name.span(),
-    );
-
     let message_name = Ident::new(
         &format!("{}Message", node_name.to_string()).to_case(Case::Pascal), 
         node_name.span(),
@@ -59,16 +54,11 @@ pub fn expand(
         }
     };
 
-    let state_forward = quote! {
-        #[allow(dead_code)]
-        #[allow(non_snake_case)]
-        pub type #state_name = #mod_name::State;
-    };
-
     let message_forward = quote! {
         #[allow(non_snake_case)]
         pub mod #message_name {
-            #(#[allow(unused_imports)] pub use super::#mod_name::Message::#names;)*
+            pub use super::#mod_name::Message;
+            #(#[allow(unused_imports)] pub use Message::#names;)*
         }
     };
 
@@ -181,7 +171,6 @@ pub fn expand(
     Ok(quote!{
         #node
 
-        #state_forward
         #message_forward
         
         #[allow(non_snake_case)]

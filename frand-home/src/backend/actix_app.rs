@@ -6,7 +6,7 @@ use tokio::{select, sync::mpsc::{unbounded_channel, UnboundedReceiver, Unbounded
 use uuid::Uuid;
 use crate::app::node::root::Root;
 
-use super::client::Client;
+use super::{client::Client, server::Server};
 
 pub struct ActixApp {
     new_conn_rx: UnboundedReceiver<ServerSocketConnection>,
@@ -26,8 +26,9 @@ impl ActixApp {
         let (server_inbound_tx, mut server_inbound_rx) = unbounded_channel::<(Option<Uuid>, Packet)>();
 
         spawn_local(async move {
+            let mut server = Server::new(send_tx);
             while let Some((id, packet)) = server_inbound_rx.recv().await {
-                send_tx.send((id, packet)).unwrap();
+                server.process(id, packet).await;
             }
         });
 
