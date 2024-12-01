@@ -1,6 +1,5 @@
 # FrandHome
 Actix 와 Yew 를 이용하여 Rust 로 개발하는 풀스택 웹 프로젝트
-개발 진행중...
 
 
 ## 목적
@@ -53,3 +52,141 @@ Actix 와 Yew 를 이용하여 Rust 로 개발하는 풀스택 웹 프로젝트
 - Option 등의 Enum Node 지원
 - 유연하고 편리한 사용을 위한 Component 구현
 - Actix, Yew, eframe 등과 간편하게 연동되는 App 구현
+
+
+## 예시
+
+- node 매크로를 사용해 __Node__ 구조를 작성합니다  
+
+```rust
+#[node]
+#[derive(Properties)]
+pub struct Shared {
+    pub sum1: NumberSum,
+    pub sum2: NumberSum,
+    pub sum3: NumberSum,
+}
+
+#[node]
+#[derive(yew::Properties)]
+pub struct NumberSum {
+    pub a: i32,
+    pub b: i32,
+    pub sum: i32,
+}
+```
+
+- a 와 b 를 더해 sum 에 emit 하는 함수를 포함하였습니다.  
+  async 동작을 확인하기 위해 200ms 지연하는 코드를 넣어 비싼 연산을 시뮬레이션합니다.  
+
+```rust
+#[cfg(not(target_arch = "wasm32"))]
+impl NumberSum {
+    pub fn emit_expensive_sum(&self) {
+        use tokio::time::sleep;
+        use std::time::Duration;
+
+        let (av, bv) = (*self.a, *self.b);
+        self.sum.emit_future(async move {
+            sleep(Duration::from_millis(200)).await;
+            av + bv
+        });
+    }
+}
+```
+
+- __Node__ 를 브라우저에 출력하기 위한 View 를 작성합니다.  
+
+```rust
+#[function_component]
+pub fn NumberSumView(node: &NumberSum) -> Html {
+    log::debug!("NumberSum::view");
+    let a = node.a.clone();
+    let b = node.b.clone();
+    let sum = node.sum.clone();
+
+    html! {
+        <span> { format!("{a} + {b} : {sum}") } </span>
+    }
+}
+```
+
+- UI 기능을 추가하기 위해 View와 View Model 들을 작성합니다.  
+
+```rust
+#[derive(Properties, Clone, PartialEq)]
+pub struct NumberInc {
+    pub name: &'static str,
+    pub number: Node<i32>,
+}
+
+#[function_component]
+pub fn NumberIncView(node: &NumberInc) -> Html {
+    let name = node.name;
+    let number = node.number.clone();
+    let number_value = *node.number;
+    let inc = move |_| {
+        number.emit(number_value + 1)
+    };
+
+    html! {
+        <button onclick = {inc}>
+            { format!("inc {name}: {number_value}") }
+        </button>
+    }
+}
+
+#[function_component]
+pub fn NumberSumIncView(node: &NumberSum) -> Html {
+    html! {
+        <div>
+            <NumberSumView ..node.clone() />
+            <NumberIncView ..NumberInc{ name:"a", number: node.a.clone() } />
+            <NumberIncView ..NumberInc{ name:"b", number: node.b.clone() } />
+        </div>
+    }
+}
+
+#[function_component]
+pub fn SharedView(node: &Shared) -> Html {
+    html! {
+        <div>
+            {"Shared"}
+            <NumberSumIncView ..node.sum1.clone() />
+            <NumberSumIncView ..node.sum2.clone() />
+            <NumberSumView ..node.sum3.clone() />
+        </div>
+    }
+}
+```
+
+- backend 에서 수행할 제어 코드를 작성합니다.  
+  sum1의 a 또는 b 값이 변하면 emit_expensive_sum() 을 호출하여 sum 값을 설정합니다.  
+  sum1.sum 또는 sum2.sum 값이 변하면 sum3의 a 또는 b 값을 설정합니다.  
+  각 값들은 emit_expensive_sum() 에 의해 일정 시간 이후 변경 사항이 전파됩니다.  
+
+```rust
+pub async fn process(&mut self, packet: Packet) {
+    self.processor.process(packet, |node, _packet, message| {
+        use RootMessage::*;
+        use NumberSumMessage::*;
+        match message {
+            shared(message) => {
+                use SharedMessage::*;
+                match message {
+                    sum1(a(_) | b(_)) => node.shared.sum1.emit_expensive_sum(),
+                    sum1(sum(s)) => node.shared.sum3.a.emit(s),
+
+                    sum2(a(_) | b(_)) => node.shared.sum2.emit_expensive_sum(),
+                    sum2(sum(s)) => node.shared.sum3.b.emit(s),
+
+                    sum3(a(_) | b(_)) => node.shared.sum3.emit_expensive_sum(),
+                    _ => {},
+                }
+            },
+            personal(message) => { /* 생략 */ },
+            _ => {},
+        }
+    }).await;
+}
+```

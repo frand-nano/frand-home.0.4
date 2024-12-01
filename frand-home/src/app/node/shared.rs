@@ -1,6 +1,6 @@
 use yew::*;
 use frand_node::*;
-use crate::app::{node::number_sum::NumberSum, view::NumberSumIncView};
+use crate::app::{node::number_sum::{NumberSum, NumberSumView}, view::NumberSumIncView};
 
 #[node]
 #[derive(Properties)]
@@ -17,7 +17,7 @@ pub fn SharedView(node: &Shared) -> Html {
             {"Shared"}
             <NumberSumIncView ..node.sum1.clone() />
             <NumberSumIncView ..node.sum2.clone() />
-            <NumberSumIncView ..node.sum3.clone() />
+            <NumberSumView ..node.sum3.clone() />
         </div>
     }
 }

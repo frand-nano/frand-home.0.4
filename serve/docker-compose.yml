@@ -21,11 +21,17 @@ services:
     build: 
       context: ../frand-node
       dockerfile: ../frand-node/Dockerfile
+  frand-web:
+    image: frand-web
+    build: 
+      context: ../frand-web
+      dockerfile: ../frand-web/Dockerfile
   frand-home:
     image: frand-home
     depends_on: 
       - frand-builder
       - frand-node
+      - frand-web
     build: 
       context: ../frand-home
       dockerfile: ../frand-home/Dockerfile

@@ -1,6 +1,6 @@
 use yew::*;
 use frand_node::*;
-use crate::app::view::NumberSumIncView;
+use crate::app::{node::number_sum::NumberSumView, view::NumberSumIncView};
 use super::number_sum::NumberSum;
 
 #[node]
@@ -18,7 +18,7 @@ pub fn PersonalView(node: &Personal) -> Html {
             {"Personal"}
             <NumberSumIncView ..node.sum1.clone() />
             <NumberSumIncView ..node.sum2.clone() />
-            <NumberSumIncView ..node.sum3.clone() />
+            <NumberSumView ..node.sum3.clone() />
         </div>
     }
 }
